@@ -1,7 +1,8 @@
 (ns io.factorhouse.hsx.core
   (:require ["react" :as react]
             [goog.object :as obj]
-            [io.factorhouse.hsx.props :as props]))
+            [io.factorhouse.hsx.props :as props]
+            [io.factorhouse.hsx.tag :as tag]))
 
 (declare create-element)
 
@@ -44,14 +45,19 @@
       (react/createElement f (props/hsx-props->react-props outer-props)))
 
     (keyword? elem-type)
-    (let [props    (props/hsx-props->react-props (first args))
-          children (if props
-                     (rest args)
-                     args)
-          props    (or props #js {})]
+    (let [{:keys [tag id className]} (tag/cached-parse elem-type)
+          props     (props/hsx-props->react-props (first args))
+          children  (if props
+                      (rest args)
+                      args)
+          props     (or props #js {})]
       (when-let [meta-props (meta hiccup)]
         (obj/extend props (props/hsx-props->react-props meta-props)))
-      (apply react/createElement (name elem-type) props (map create-element children)))
+      (when id
+        (obj/set props "id" id))
+      (when className
+        (obj/set props "className" (str (obj/get props "className") " " className)))
+      (apply react/createElement tag props (map create-element children)))
 
     :else
     (throw (ex-info (str "Failed to create React element from provided Hiccup. Got: " (pr-str hiccup))

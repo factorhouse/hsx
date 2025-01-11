@@ -7,6 +7,6 @@
   (:require [io.factorhouse.hsx.core :as hsx]
             ["react" :as react]))
 
-(defn as-element hsx/create-element)
+(def as-element hsx/create-element)
 (def reactify-component hsx/reactify-component)
 (def create-element react/createElement)
