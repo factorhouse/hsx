@@ -6,10 +6,13 @@
 
 (declare create-element)
 
-(defn- hsx-fn?
+(defn- hsx-component?
   [x]
-  (or (fn? x)
-      (instance? cljs.core/MultiFn x)))
+  (or (fn? x) (instance? cljs.core/MultiFn x)))
+
+(defn- react-component?
+  [x]
+  (or (fn? x) (object? x)))
 
 (defn- create-element-vector
   [[elem-type & args :as hiccup]]
@@ -31,13 +34,13 @@
                      (rest args)
                      args)
           props    (or props #js {})]
-      (assert (or (fn? f) (object? f))
+      (assert (react-component? f)
               (str "To uphold the :> syntax contract, the second element must be a React function component or class. Got: " (pr-str hiccup)))
       (when-let [meta-props (meta hiccup)]
         (obj/extend props (props/hsx-props->react-props meta-props)))
       (apply react/createElement f props (map create-element children)))
 
-    (hsx-fn? elem-type)
+    (hsx-component? elem-type)
     (let [f            (fn [] (create-element (apply elem-type args)))
           outer-props  (meta hiccup)
           display-name (or (:display-name outer-props) (:displayName outer-props) (pr-str elem-type))]

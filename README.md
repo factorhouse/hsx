@@ -17,7 +17,7 @@ Unlike Reagent, HSX does not:
 
 ## Features
 
-* **Supports React18+ and all of its features** 
+* **Supports React 19:** hooks, effects, concurrent rendering, suspense, transitions,  etc 
 * **Hiccup Syntax**: Write React components with concise, readable Hiccup expressions.
 * **Minimal Overhead**: HSX is just a thin layer on top of React. No unnecessary abstractions or runtime complexities. No external dependencies.
 * **Migration-Friendly**: Drop-in compatibility with Reagent-style Hiccup makes it simple to upgrade existing codebases.
@@ -28,8 +28,8 @@ Unlike Reagent, HSX does not:
 
 ### Challenges with Reagent
 
-* **React 18+ Compatibility**: Reagent's rendering model [does not work](https://github.com/reagent-project/reagent/issues/597#issuecomment-1908054952) with current React versions
-* **Technical Debt**: Continuing to depend on Reagent introduces maintenance challenges. Reagent depends on a version of React that is 4+ years old. Most of the React ecosystem is starting require React 18+ at a minimum.
+* **React 19 Compatibility**: Reagent's rendering model [does not work](https://github.com/reagent-project/reagent/issues/597#issuecomment-1908054952) with current React versions
+* **Technical Debt**: Continuing to depend on Reagent introduces maintenance challenges. Reagent depends on a version of React that is 4+ years old. Most of the React ecosystem is starting require React 18 at a minimum.
 
 ## Usage
 
@@ -139,6 +139,17 @@ Generally this means rewriting the component to use hooks.
 However, the one place in the React ecosystem where Class components may be required are [error boundaries](https://react.dev/reference/react/Component#catching-rendering-errors-with-an-error-boundary). 
 
 If the only place you are using Reagent class components is for error boundaries (like us) then we suggest using a library like [react-error-boundary](https://github.com/bvaughn/react-error-boundary) instead.
+
+### What about Fragments?
+
+The same as Reagent. Denoted by `:<>`
+
+```clojure 
+(defn list-of-things [] 
+  [:<> 
+   [:div "First thing"]
+   [:div "Second thing"]])
+```
 
 ### How do I call JavaScript components?
 
