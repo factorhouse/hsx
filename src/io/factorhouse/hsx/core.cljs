@@ -8,66 +8,122 @@
 
 (defn- hsx-component?
   [x]
-  (or (fn? x) (instance? cljs.core/MultiFn x)))
+  (or (fn? x)
+      (instance? cljs.core/MultiFn x)))
+
+(defn- hsx-component->display-name
+  [f]
+  (try
+    (or (.-displayName f)
+        (.-name f)
+        (pr-str f))
+    (catch :default _
+      (js/console.warn "Failed to construct a display name from HSX component, returning 'Unknown'")
+      "Unknown")))
 
 (defn- react-component?
   [x]
-  (or (fn? x) (object? x)))
+  ;; Naive predicate but good enough, does not check  x.prototype.isReactComponent for class components etc...
+  ;; Which is fine as React compiler will throw a less specific exception in this circumstance
+  (or (fn? x)
+      (object? x)))
+
+(defn- create-react-element
+  [original-hsx elem props children]
+  (try
+    (apply react/createElement elem props children)
+    (catch :default e
+      (throw (ex-info e "Failed to create React Element from provided HSX: exception calling react/createElement."
+                      {:hsx        original-hsx
+                       :elem       elem
+                       :props      props
+                       :children   children
+                       :error-type :react-error})))))
+
+(defn- hsx-props->react-props
+  [original-hsx props]
+  (try (props/hsx-props->react-props props)
+       (catch :default e
+         (throw (ex-info e "Failed to create React Element from provided HSX: Clj->JS props serialization error."
+                         {:hsx        original-hsx
+                          :props      props
+                          :error-type :props-serialization-error})))))
 
 (defn- create-element-vector
-  [[elem-type & args :as hiccup]]
+  [[elem-type & args :as hsx]]
   (cond
     (= :<> elem-type)
-    (apply react/createElement react/Fragment nil (map create-element args))
+    (create-react-element hsx react/Fragment nil (map create-element args))
 
     (= :f> elem-type)
     (do
-      (js/console.warn "Annotating components with hooks is a Reagent thing. Just use literal Hiccup instead.")
-      (assert (hsx-fn? (first args))
-              (str "To uphold the :f> syntax contact, the second element must be a ClojureScript function. Got: " (pr-str hiccup)))
-      (create-element (vec args)))
+      (js/console.warn "Annotating components for hooks (:f>) is a Reagent thing. Just call the component normally instead: "
+                       (pr-str [(hsx-component->display-name (second hsx)) "..."]))
+      (when-not (hsx-component? (first args))
+        (throw (ex-info "Failed to create React Element from provided HSX: the second argument to :f> must be a ClojureScript function."
+                        {:hsx        hsx
+                         :elem       (second args)
+                         :error-type :syntax-error})))
+      (create-element (with-meta (vec args) (meta hsx))))
 
     (= :> elem-type)
     (let [[f & args] args
-          props    (props/hsx-props->react-props (first args))
+          props    (hsx-props->react-props hsx (first args))
           children (if props
                      (rest args)
                      args)
           props    (or props #js {})]
-      (assert (react-component? f)
-              (str "To uphold the :> syntax contract, the second element must be a React function component or class. Got: " (pr-str hiccup)))
-      (when-let [meta-props (meta hiccup)]
-        (obj/extend props (props/hsx-props->react-props meta-props)))
-      (apply react/createElement f props (map create-element children)))
+      (when-not (react-component? f)
+        (throw (ex-info "Failed to create React Element from provided HSX: the second argument to :> must be a valid React component (a function or class that extends React.Component)."
+                        {:hsx        hsx
+                         :elem       (second args)
+                         :error-type :syntax-error
+                         :docs       "https://react.dev/reference/react/createElement#parameters"})))
+      (when-let [meta-props (meta hsx)]
+        (obj/extend props (hsx-props->react-props hsx meta-props)))
+      (create-react-element hsx f props (map create-element children)))
 
     (hsx-component? elem-type)
-    (let [f            (fn [] (create-element (apply elem-type args)))
-          outer-props  (meta hiccup)
-          display-name (or (:display-name outer-props) (:displayName outer-props) (pr-str elem-type))]
+    (let [outer-props  (meta hsx)
+          display-name (or (:display-name outer-props)
+                           (:displayName outer-props)
+                           (hsx-component->display-name elem-type))
+          f            (fn []
+                         (let [evaled-elem (try (apply elem-type args)
+                                                (catch :default e
+                                                  (ex-info e (str "Failed to create React Element from provided HSX: unhandled exception when evaluating HSX component named '" display-name "'.")
+                                                           {:hsx          hsx
+                                                            :display-name display-name
+                                                            :elem         elem-type
+                                                            :args         args
+                                                            :error-type   :hsx-component-error})))]
+                           (create-element evaled-elem)))]
       (obj/set f "displayName" display-name)
-      (react/createElement f (props/hsx-props->react-props outer-props)))
+      (create-react-element hsx f (hsx-props->react-props hsx outer-props) nil))
 
     (keyword? elem-type)
     (let [{:keys [tag id className]} (tag/cached-parse elem-type)
-          props     (props/hsx-props->react-props (first args))
-          children  (if props
-                      (rest args)
-                      args)
-          props     (or props #js {})]
-      (when-let [meta-props (meta hiccup)]
-        (obj/extend props (props/hsx-props->react-props meta-props)))
+          props    (hsx-props->react-props hsx (first args))
+          children (if props
+                     (rest args)
+                     args)
+          props    (or props #js {})]
+      (when-let [meta-props (meta hsx)]
+        (obj/extend props (hsx-props->react-props hsx meta-props)))
       (when id
         (obj/set props "id" id))
       (when className
         (obj/set props "className" (str (obj/get props "className") " " className)))
-      (apply react/createElement tag props (map create-element children)))
+      (create-react-element hsx tag props (map create-element children)))
 
     :else
-    (throw (ex-info (str "Failed to create React element from provided Hiccup. Got: " (pr-str hiccup))
-                    {:input hiccup}))))
+    (throw (ex-info (str "Failed to create React element from provided HSX: cannot create element from type '" (type elem-type) "'.")
+                    {:hsx        hsx
+                     :elem       elem-type
+                     :error-type :unknown-element-type}))))
 
 (defn create-element
-  "Like react/createElement, but takes in some Hiccup (HSX syntax) and returns a React element.
+  "Like react/createElement, but takes in some HSX and returns a React element.
 
   Should be called at the root of your application, where you render your view:
 
