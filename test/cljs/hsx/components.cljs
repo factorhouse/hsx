@@ -21,18 +21,18 @@
 
 (def FragmentedButton
   (hsx/reactify-component
-    (fn [{:keys [onClick buttonOneValue buttonTwoValue]}]
-      [:div
-       [:<>
-        [button {:onClick onClick :children buttonOneValue}]
-        [button {:onClick onClick :children buttonTwoValue}]]])))
+   (fn [{:keys [onClick buttonOneValue buttonTwoValue]}]
+     [:div
+      [:<>
+       [button {:onClick onClick :children buttonOneValue}]
+       [button {:onClick onClick :children buttonTwoValue}]]])))
 
 (def SeqButton
   (hsx/reactify-component
-    (fn [{:keys [onClick buttonOneValue buttonTwoValue]}]
-      (let [buttons [[button {:onClick onClick :children buttonOneValue}]
-                     [button {:onClick onClick :children buttonTwoValue}]]]
-        [:div
-         (for [button buttons]
-           ^{:key (str "button-" (-> button second :children))}
-           button)]))))
+   (fn [{:keys [onClick buttonOneValue buttonTwoValue]}]
+     (let [buttons [[button {:onClick onClick :children buttonOneValue}]
+                    [button {:onClick onClick :children buttonTwoValue}]]]
+       [:div
+        (for [button buttons]
+          ^{:key (str "button-" (-> button second :children))}
+          button)]))))

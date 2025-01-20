@@ -1,4 +1,4 @@
-{:source-paths ["src" "test/cljs"]
+{:source-paths ["modules/hsx/src" "test/cljs"]
  :builds
  {:test
   {:target     :esm

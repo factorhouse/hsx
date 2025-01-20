@@ -21,6 +21,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - run: lein fmt
+      - run: lein kondo
       - run: npm ci
       - run: npm run compile-cljs
       - run: npm run test
