@@ -6,20 +6,21 @@
 
 Think of HSX as a lightweight syntactic layer over React, much like [JSX](https://react.dev/learn/writing-markup-with-jsx) in the JavaScript world.
 
-If you want to read more about the engineering challenge of moving a 100k+ LOC Reagent codebase to React 19 read [this blog post]().
 
 ## Why HSX?
 
-HSX is designed to offer a seamless transition from Reagent-style development to plain React Function components. It’s compatible with Reagent-style Hiccup, making it easy to migrate your codebase to HSX.
+HSX is designed to offer a seamless transition from Reagent-style development to plain React Function components. It’s compatible with [Reagent-style Hiccup](https://github.com/reagent-project/reagent/blob/master/doc/UsingHiccupToDescribeHTML.md), making it easy to migrate your codebase to HSX.
 
 Unlike Reagent, HSX does not:
 
 * Render components as classes. HSX elements are plain React Function components.
-* Include its own state abstractions like RAtom. Use React’s built-in state management hooks like useState.
+* Include its own state abstractions like RAtom. Use React’s built-in state management hooks like [useState](https://react.dev/reference/react/useState).
+
+If you want to read more about the engineering challenge of moving a 100k+ LOC Reagent codebase to React 19 read [this blog post]().
 
 ## Features
 
-* **Supports React 19:** hooks, effects, concurrent rendering, suspense, transitions,  etc 
+* **Supports React 19:** hooks, effects, concurrent rendering, suspense, transitions, etc 
 * **Hiccup Syntax**: Write React components with concise, readable Hiccup expressions.
 * **Minimal Overhead**: HSX is just a thin layer on top of React. No unnecessary abstractions or runtime complexities. No external dependencies.
 * **Migration-Friendly**: Drop-in compatibility with Reagent-style Hiccup makes it simple to upgrade existing codebases.
@@ -35,7 +36,7 @@ Unlike Reagent, HSX does not:
 
 ## Usage
 
-Using HSX is straightforward. The entire library is only about 100 lines of ClojureScript (with comments), and there are no macros or complicated rendering mechanisms involved. It’s designed to be as close to plain React as possible while retaining the expressive power of Hiccup.
+Using HSX is straightforward. The entire library is only about 150 lines of ClojureScript (with comments), and there are no macros or complicated rendering mechanisms involved. It’s designed to be as close to plain React as possible while retaining the expressive power of Hiccup.
 
 HSX exposes two primary functions:
 
@@ -46,7 +47,8 @@ HSX exposes two primary functions:
 
 ```clojure
 (ns com.corp.my-hsx-ui
-  (:require [io.factorhouse.hsx.core :as hsx]))
+  (:require [io.factorhouse.hsx.core :as hsx]
+            ["react-dom" :refer [createRoot]]))
 
 (defn test-ui []
   [:div {:on-click #(js/alert "Clicked!")}
@@ -75,15 +77,17 @@ HSX components are just React Function components under the hood with a bit of s
 There are no state abstractions found in this library. We suggest you migrate any Reagent components with local state to use `react/useState`. The state hook is the most idiomatic way to deal with local state in React.
 
 ```clojure
+;; (:require ["react" :as react])
+
 (defn reagent-component-with-local-state []
-  (let [state (rg/atom 1)]
+  (let [state (reagent.core/atom 1)]
     (fn []
       [:div {:on-click #(swap! state inc)} 
        "The value of state is " @state])))
 
 (defn hsx-component-with-local-state []
   (let [[state set-state] (react/useState 1)]
-    [:div {:on-click #(set-state (inc state))} 
+    [:div {:on-click #(set-state inc)} 
      "The value of state is " state]))
 ```
 
@@ -120,13 +124,13 @@ We use the same props serialisation logic as Reagent to make migrating to HSX as
 
 ### What about component metadata (keys, display name etc)
 
-The same as Reagent. Say you want to pass a React key to a component:
+The same as Reagent - use Clojure metadata. Say you want to pass a React key to a component:
 
 ```clojure 
 (defn component-with-seq []
   [:ol
    (for [item items]
-     ^:key (str "item-" (:id item))
+     ^{:key (str "item-" (:id item))}
      [item-component item])])
 ```
 
@@ -170,7 +174,7 @@ The same as Reagent. Denoted by `:>`
 If we use [react-error-boundary](https://github.com/bvaughn/react-error-boundary) as an example:
 
 ```clojure 
-;; (:require [react-error-boundary :refer [ErrorBoundary]] 
+;; (:require ["react-error-boundary" :refer [ErrorBoundary]] 
 ;;           [io.factorhouse.hsx.core :as hsx])
 
 (defn fallback-renderer 
