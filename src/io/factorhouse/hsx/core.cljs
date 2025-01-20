@@ -33,21 +33,23 @@
   (try
     (apply react/createElement elem props children)
     (catch :default e
-      (throw (ex-info e "Failed to create React Element from provided HSX: exception calling react/createElement."
+      (throw (ex-info "Failed to create React Element from provided HSX: exception calling react/createElement."
                       {:hsx        original-hsx
                        :elem       elem
                        :props      props
                        :children   children
-                       :error-type :react-error})))))
+                       :error-type :react-error}
+                      e)))))
 
 (defn- hsx-props->react-props
   [original-hsx props]
   (try (props/hsx-props->react-props props)
        (catch :default e
-         (throw (ex-info e "Failed to create React Element from provided HSX: Clj->JS props serialization error."
+         (throw (ex-info "Failed to create React Element from provided HSX: Clj->JS props serialization error."
                          {:hsx        original-hsx
                           :props      props
-                          :error-type :props-serialization-error})))))
+                          :error-type :props-serialization-error}
+                         e)))))
 
 (defn- create-element-vector
   [[elem-type & args :as hsx]]
@@ -91,12 +93,13 @@
           f            (fn []
                          (let [evaled-elem (try (apply elem-type args)
                                                 (catch :default e
-                                                  (ex-info e (str "Failed to create React Element from provided HSX: unhandled exception when evaluating HSX component named '" display-name "'.")
+                                                  (ex-info (str "Failed to create React Element from provided HSX: unhandled exception when evaluating HSX component named '" display-name "'.")
                                                            {:hsx          hsx
                                                             :display-name display-name
                                                             :elem         elem-type
                                                             :args         args
-                                                            :error-type   :hsx-component-error})))]
+                                                            :error-type   :hsx-component-error}
+                                                           e)))]
                            (create-element evaled-elem)))]
       (obj/set f "displayName" display-name)
       (create-react-element hsx f (hsx-props->react-props hsx outer-props) nil))

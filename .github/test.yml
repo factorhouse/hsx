@@ -1,0 +1,26 @@
+name: test
+
+on: [push]
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Install Clojure tools
+        uses: DeLaGuardo/setup-clojure@13.0
+        with:
+          lein: 'latest'
+      - run: lein kondo
+      - run: lein fmt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run compile-cljs
+      - run: npm run test

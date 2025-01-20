@@ -1,0 +1,10 @@
+{:source-paths ["src" "test/cljs"]
+ :builds
+ {:test
+  {:target     :esm
+   :output-dir "target/"
+   :modules    {:hsx-test {:exports {:Button             hsx.components/Button
+                                     :ButtonViaReactElem hsx.components/ButtonViaReactElem
+                                     :FragmentedButton   hsx.components/FragmentedButton
+                                     :SeqButton          hsx.components/SeqButton}}}}}}
+

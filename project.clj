@@ -6,4 +6,16 @@
             :distribution :repo
             :comments     "same as Kafka"}
   :dependencies [[org.clojure/clojure "1.12.0" :scope "provided"]
-                 [org.clojure/clojurescript "1.11.132" :scope "provided"]])
+                 [org.clojure/clojurescript "1.11.132" :scope "provided"]]
+  :profiles {:dev   {:resource-paths ["dev-resources"]
+                     :plugins        [[dev.weavejester/lein-cljfmt "0.13.0"]]
+                     :dependencies   [[org.slf4j/slf4j-api "2.0.16"]
+                                      [ch.qos.logback/logback-classic "1.3.14"]
+                                      [cheshire "5.13.0" :exclusions [com.fasterxml.jackson.core/jackson-databind]]
+                                      [clj-kondo "2024.11.14" :exclusions [com.cognitect/transit-java javax.xml.bind/jaxb-api]]]}
+             :smoke {:pedantic? :abort}}
+  :test-paths ["test/cljs"]
+  :source-paths ["src"]
+  :aliases {"kondo"  ["with-profile" "+smoke" "run" "-m" "clj-kondo.main" "--lint" "src" "test/cljs"]
+            "fmt"    ["with-profile" "+smoke" "cljfmt" "check"]
+            "fmtfix" ["with-profile" "+smoke" "cljfmt" "fix"]})
