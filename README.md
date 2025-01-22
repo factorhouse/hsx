@@ -6,7 +6,6 @@
 
 Think of HSX as a lightweight syntactic layer over React, much like [JSX](https://react.dev/learn/writing-markup-with-jsx) in the JavaScript world.
 
-
 ## Why HSX?
 
 HSX is designed to offer a seamless transition from Reagent-style development to plain React Function components. It’s compatible with [Reagent-style Hiccup](https://github.com/reagent-project/reagent/blob/master/doc/UsingHiccupToDescribeHTML.md), making it easy to migrate your codebase to HSX.
@@ -189,6 +188,62 @@ If we use [react-error-boundary](https://github.com/bvaughn/react-error-boundary
 (defn my-ui []
   [with-error-boundary 
    [:div "This is my application..."]])
+```
+
+### How are errors handled?
+
+
+HSX has a customisable error handler. By default, an `ex-info` is thrown when an error is encountered. This `ex-info` object will contain:
+
+* The message - a human-readable message describing the error
+* The ex-data - context about the error: the originating hiccup, the failing element, the type of error and so forth
+* The originating error (if-any)
+
+You can classify HSX errors as syntax errors (eg malformed Hiccup) thrown when HSX attempts to compile your code to React elements. HSX's error handling will not pick up errors thrown during the React render lifecycle, eg errors caused by invalid business logic within your app.
+
+Error handling is extensible!
+
+You could have both a production and dev error handler:
+
+* Your production error handler might tap into some sort of error tracking backend like Sentry.
+* Your dev error handler might log to the console and return some Hiccup describing the error that is meaningful to developers.
+
+You can customise the error handler using `closure-defines`. Within your `shadow-cljs.edn` file:
+
+```clojure
+{...
+ :builds
+ {:app
+  {:target :browser
+   ...
+   :modules {:app {:entries [your.app]}}
+   ;; to enable in development only
+   :dev {:closure-defines {io.factorhouse.hsx/ERROR-HANDLER "dev"}}
+
+   :release {:closure-defines {io.factorhouse/ERROR-HANDLER "prod"}}
+   }}
+```
+
+You can then extend the `io.factorhouse.hsx.core/error-handler` multimethod for each of your error handlers:
+
+```clojure
+(defmethod hsx/error-handler :dev
+  [_ message ctx e]
+  (js/console.warn "Error compiling HSX" message e)
+  ;; Return some HSX
+  [:<>
+    [:h1 "Error compiling HSX"]
+    [:p message]
+    [:pre (pr-str ctx)]
+    [:p "Please check the output of your browser's console for more details."]]
+```
+
+```clojure
+(defmethod hsx/error-handler :prod
+  [_ message ctx e]
+  (mark-hsx-syntax-error! ctx)
+  ;; Let our React error boundary handle the exception - the error boundary is what our customers will see if we have broken the app...
+  (throw (ex-info message ctx e)))
 ```
 
 ## Copyright and License

@@ -30,9 +30,9 @@
 (def SeqButton
   (hsx/reactify-component
    (fn [{:keys [onClick buttonOneValue buttonTwoValue]}]
-     (let [buttons [[button {:onClick onClick :children buttonOneValue}]
-                    [button {:onClick onClick :children buttonTwoValue}]]]
+     (let [buttons [{:onClick onClick :children buttonOneValue}
+                    {:onClick onClick :children buttonTwoValue}]]
        [:div
-        (for [button buttons]
-          ^{:key (str "button-" (-> button second :children))}
-          button)]))))
+        (for [props buttons]
+          ^{:key (str "button-" (:children props))}
+          [:> Button props])]))))
