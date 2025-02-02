@@ -33,7 +33,7 @@
     [:div
      [:button {:className (class-names "outline-none focus:outline-none"
                                        (when complete "text-green-600"))
-               :on-click #(toggle-complete id)}
+               :on-click  #(toggle-complete id)}
       [:i {:className "fa fa-check fa-fw" :aria-hidden "true"}]]
      [:button {:className "outline-none focus:outline-none ml-4 focus:text-red-600"
                :on-click  #(remove-todo id)}
