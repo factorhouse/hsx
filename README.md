@@ -47,7 +47,7 @@ HSX exposes two primary functions:
 ```clojure
 (ns com.corp.my-hsx-ui
   (:require [io.factorhouse.hsx.core :as hsx]
-            ["react-dom" :refer [createRoot]]))
+            ["react-dom/client" :refer [createRoot]]))
 
 (defn test-ui []
   [:div {:on-click #(js/alert "Clicked!")}
