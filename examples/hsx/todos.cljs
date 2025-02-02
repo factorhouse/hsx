@@ -1,4 +1,4 @@
-(ns hsx.todo-mvc
+(ns hsx.todos
   (:require ["react" :as react]
             [clojure.string :as str]))
 
@@ -39,7 +39,7 @@
                :on-click  #(remove-todo id)}
       [:i {:className "fa fa-trash fa-fw" :aria-hidden "true"}]]]]])
 
-(defn todo-mvc
+(defn todos
   []
   (let [[todos set-todos] (react/useState [])
         add-todo        (fn [text]

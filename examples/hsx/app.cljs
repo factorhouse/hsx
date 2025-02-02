@@ -2,7 +2,7 @@
   (:require ["react" :as react]
             ["react-dom/client" :as react-dom]
             [hsx.clock :as clock]
-            [hsx.todo-mvc :as todo-mvc]
+            [hsx.todos :as todos]
             [io.factorhouse.hsx.core :as hsx]))
 
 (defn app []
@@ -13,12 +13,12 @@
        [:select {:value     example
                  :on-change #(set-example (-> % .-target .-value))}
         [:option {:value "clock" :label "Clock"}]
-        [:option {:value "todo-mvc" :label "Todo Mvc"}]]]]
+        [:option {:value "todos" :label "Todos"}]]]]
      (case example
        "clock"
        [clock/clock]
-       "todo-mvc"
-       [todo-mvc/todo-mvc])]))
+       "todos"
+       [todos/todos])]))
 
 (defonce root (react-dom/createRoot (.getElementById js/document "app")))
 
