@@ -46,24 +46,24 @@
     (apply react/createElement elem props children)
     (catch :default e
       (handle-error*
-        "Failed to create React Element from provided HSX: exception calling react/createElement."
-        {:hsx        original-hsx
-         :elem       elem
-         :props      props
-         :children   children
-         :error-type :react-error}
-        e))))
+       "Failed to create React Element from provided HSX: exception calling react/createElement."
+       {:hsx        original-hsx
+        :elem       elem
+        :props      props
+        :children   children
+        :error-type :react-error}
+       e))))
 
 (defn- hsx-props->react-props
   [original-hsx props]
   (try (props/hsx-props->react-props props)
        (catch :default e
          (handle-error*
-           "Failed to create React Element from provided HSX: Clj->JS props serialization error."
-           {:hsx        original-hsx
-            :props      props
-            :error-type :props-serialization-error}
-           e))))
+          "Failed to create React Element from provided HSX: Clj->JS props serialization error."
+          {:hsx        original-hsx
+           :props      props
+           :error-type :props-serialization-error}
+          e))))
 
 (defn- create-element-vector
   [[elem-type & args :as hsx]]
@@ -77,11 +77,11 @@
                        (pr-str [(hsx-component->display-name (second hsx)) "..."]))
       (when-not (hsx-component? (first args))
         (handle-error*
-          "Failed to create React Element from provided HSX: the second argument to :f> must be a ClojureScript function."
-          {:hsx        hsx
-           :elem       (second args)
-           :error-type :syntax-error}
-          nil))
+         "Failed to create React Element from provided HSX: the second argument to :f> must be a ClojureScript function."
+         {:hsx        hsx
+          :elem       (second args)
+          :error-type :syntax-error}
+         nil))
       (create-element (with-meta (vec args) (meta hsx))))
 
     (= :> elem-type)
@@ -110,13 +110,13 @@
                          (let [evaled-elem (try (apply elem-type args)
                                                 (catch :default e
                                                   (handle-error*
-                                                    (str "Failed to create React Element from provided HSX: unhandled exception when evaluating HSX component named '" display-name "'.")
-                                                    {:hsx          hsx
-                                                     :display-name display-name
-                                                     :elem         elem-type
-                                                     :args         args
-                                                     :error-type   :hsx-component-error}
-                                                    e)))]
+                                                   (str "Failed to create React Element from provided HSX: unhandled exception when evaluating HSX component named '" display-name "'.")
+                                                   {:hsx          hsx
+                                                    :display-name display-name
+                                                    :elem         elem-type
+                                                    :args         args
+                                                    :error-type   :hsx-component-error}
+                                                   e)))]
                            (create-element evaled-elem)))]
       (obj/set f "displayName" display-name)
       (create-react-element hsx f (hsx-props->react-props hsx outer-props) nil))
@@ -138,11 +138,11 @@
 
     :else
     (handle-error*
-      (str "Failed to create React element from provided HSX: cannot create element from type '" (type elem-type) "'.")
-      {:hsx        hsx
-       :elem       elem-type
-       :error-type :unknown-element-type}
-      nil)))
+     (str "Failed to create React element from provided HSX: cannot create element from type '" (type elem-type) "'.")
+     {:hsx        hsx
+      :elem       elem-type
+      :error-type :unknown-element-type}
+     nil)))
 
 (defn create-element
   "Like react/createElement, but takes in some HSX and returns a React element.

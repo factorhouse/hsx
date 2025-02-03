@@ -1,5 +1,5 @@
 // test/js/hsx.test.js
-import { Button, ButtonViaReactElem, FragmentedButton, SeqButton } from '../../target/hsx-test';
+import { Button, ButtonViaReactElem, FragmentedButton, SeqButton } from '../../target/test/hsx-test';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from "react";
 

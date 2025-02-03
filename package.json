@@ -8,6 +8,7 @@
   },
   "scripts": {
     "compile-cljs": "npx shadow-cljs compile test",
+    "watch-examples": "npx shadow-cljs watch examples",
     "test": "jest"
   },
   "author": "Factor House",
