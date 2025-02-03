@@ -1,4 +1,7 @@
-{:source-paths ["modules/hsx/src" "test/cljs" "examples/hsx"]
+{:source-paths ["modules/hsx/src" "test/cljs" "examples"]
+
+ :dev-http     {8000 "public"}
+
  :builds
  {:test
   {:target     :esm
@@ -8,6 +11,6 @@
                                      :FragmentedButton   hsx.components/FragmentedButton
                                      :SeqButton          hsx.components/SeqButton}}}}
   :examples
-  {:target     :esm
-   :output-dir "target/examples"
-   :modules    {:example-app {:exports {:init hsx.app/init}}}}}}
+  {:target     :browser
+   :output-dir "public/js"
+   :modules    {:main {:entries [hsx.app]}}}}}

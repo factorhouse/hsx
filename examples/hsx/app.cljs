@@ -24,3 +24,5 @@
 
 (defn init []
   (.render root (hsx/create-element [app])))
+
+(init)
