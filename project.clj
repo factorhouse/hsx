@@ -1,4 +1,4 @@
-(defproject io.factorhouse/hsx "1.0.4"
+(defproject io.factorhouse/hsx "1.0.11"
   :description "HSX is a ClojureScript library for writing React components using Hiccup syntax."
   :url "http://github.com/factorhouse/hsx"
   :license {:name         "Apache-2.0 License"

@@ -4,6 +4,8 @@
             [io.factorhouse.hsx.props :as props]
             [io.factorhouse.hsx.tag :as tag]))
 
+(goog-define USE_MEMO true)
+
 (declare create-element)
 
 (goog-define ERROR-HANDLER "throw-ex-info")
@@ -20,8 +22,7 @@
 
 (defn- hsx-component?
   [x]
-  (or (fn? x)
-      (instance? cljs.core/MultiFn x)))
+  (or (fn? x) (instance? cljs.core/MultiFn x)))
 
 (defn- hsx-component->display-name
   [f]
@@ -37,8 +38,7 @@
   [x]
   ;; Naive predicate but good enough, does not check  x.prototype.isReactComponent for class components etc...
   ;; Which is fine as React compiler will throw a less specific exception in this circumstance
-  (or (fn? x)
-      (object? x)))
+  (or (fn? x) (object? x)))
 
 (defn- create-react-element
   [original-hsx elem props children]
@@ -73,7 +73,7 @@
 
     (= :f> elem-type)
     (do
-      (js/console.warn "Annotating components for hooks (:f>) is a Reagent thing. Just call the component normally instead: "
+      (js/console.warn "Annotating components for hooks (:f>) is a Reagent thing. Just call the component normally: "
                        (pr-str [(hsx-component->display-name (second hsx)) "..."]))
       (when-not (hsx-component? (first args))
         (handle-error*
@@ -102,24 +102,39 @@
       (create-react-element hsx f props (map create-element children)))
 
     (hsx-component? elem-type)
-    (let [outer-props  (meta hsx)
-          display-name (or (:display-name outer-props)
-                           (:displayName outer-props)
-                           (hsx-component->display-name elem-type))
-          f            (fn []
-                         (let [evaled-elem (try (apply elem-type args)
-                                                (catch :default e
-                                                  (handle-error*
-                                                    (str "Failed to create React Element from provided HSX: unhandled exception when evaluating HSX component named '" display-name "'.")
-                                                    {:hsx          hsx
-                                                     :display-name display-name
-                                                     :elem         elem-type
-                                                     :args         args
-                                                     :error-type   :hsx-component-error}
-                                                    e)))]
-                           (create-element evaled-elem)))]
-      (obj/set f "displayName" display-name)
-      (create-react-element hsx f (hsx-props->react-props hsx outer-props) nil))
+    (let [outer-props   (merge {:memo? USE_MEMO} (meta hsx))
+          display-name  (or (:display-name outer-props)
+                            (:displayName outer-props)
+                            (hsx-component->display-name elem-type))
+          hsx-comp      (fn [props]
+                          (try
+                            (let [elem-f    (obj/get props "element")
+                                  elem-args (obj/get props "args")]
+                              (create-element (apply elem-f elem-args)))
+                            (catch :default e
+                              (handle-error* (str "Failed to create React Element from provided HSX: unhandled exception when evaluating HSX component named: '" display-name "'.")
+                                             {:hsx          hsx
+                                              :display-name display-name
+                                              :elem         elem-type
+                                              :args         args
+                                              :error-type   :hsx-component-error}
+                                             e))))
+          returned-comp (if (:memo? outer-props)
+                          (react/memo hsx-comp
+                                      (fn [prev-props next-props]
+                                        ;; ^{:memo true}
+                                        (prn "Diff => " display-name
+                                             (= (obj/get prev-props "args")
+                                                (obj/get next-props "args")))
+                                        (= (obj/get prev-props "args")
+                                           (obj/get next-props "args"))))
+                          hsx-comp)
+          props         (or (hsx-props->react-props hsx outer-props)
+                            #js {})]
+      (obj/set hsx-comp "displayName" display-name)
+      (js/Object.defineProperty hsx-comp "name" #js {"value" display-name})
+      (obj/extend props #js {"element" elem-type "args" args})
+      (create-react-element hsx returned-comp props nil))
 
     (keyword? elem-type)
     (let [{:keys [tag id className]} (tag/cached-parse elem-type)

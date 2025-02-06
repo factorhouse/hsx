@@ -30,16 +30,16 @@ If you want to read more about the engineering challenge of moving a 100k+ LOC R
 
 ### Challenges with Reagent
 
-* **React 19 Compatibility**: Reagent's rendering model [does not work](https://github.com/reagent-project/reagent/issues/597#issuecomment-1908054952) with current React versions
+* **React 19 Compatibility**: Reagent's rendering model [does not play nice](https://github.com/reagent-project/reagent/issues/597#issuecomment-1908054952) with current React versions
 * **Technical Debt**: Continuing to depend on Reagent introduces maintenance challenges. Reagent depends on a version of React that is 4+ years old. Most of the React ecosystem is starting require React 18 at a minimum.
 
 ## Usage
 
-Using HSX is straightforward. The entire library is only about 150 lines of ClojureScript (with comments), and there are no macros or complicated rendering mechanisms involved. It’s designed to be as close to plain React as possible while retaining the expressive power of Hiccup.
+Using HSX is straightforward. The entire library is only about 200 lines of ClojureScript (with comments). HSX is designed to be as close to plain React as possible while retaining the expressive power of Hiccup.
 
 HSX exposes two primary functions:
 
-* `io.factorhouse.hsx.core/create-element` - like `react/createElement`
+* `io.factorhouse.hsx.core/create-element` - like `react/createElement` but for HSX elements
 * `io.factorhouse.hsx.core/reactify-component` - like `reagent.core/reactify-component`
 
 ### Example
@@ -47,7 +47,7 @@ HSX exposes two primary functions:
 ```clojure
 (ns com.corp.my-hsx-ui
   (:require [io.factorhouse.hsx.core :as hsx]
-            ["react-dom" :refer [createRoot]]))
+            ["react-dom/client" :refer [createRoot]]))
 
 (defn test-ui []
   [:div {:on-click #(js/alert "Clicked!")}
@@ -60,20 +60,34 @@ HSX exposes two primary functions:
   (.render root (hsx/create-element [test-ui])))
 ```
 
+## Migrating from Reagent
+
+If you have an existing Reagent codebase, you can use the `io.factorhouse/hsx-reagent-bridge ` library to ease some of the migration pains:
+
+```clojure 
+{:deps {"io.factorhouse/hsx-reagent-bridge" "1.0.0"}}
+```
+
+This dependency brings in a shim for the `reagent.core` namespace that aliases some of the APIs common functions:
+
+* `reagent.core/as-element` -> `io.factorhouse.hsx.core/create-element`
+* `reagent.core/reactify-component` -> `io.factorhouse.hsx.core/reactify-component`
+* `reagent.core/create-element` -> `react/createElement`
+
 ## FAQs
 
 ### What about performance? 
 
 Migrating from Reagent you will objectively find massive performance wins for your application because:
 
-* You ditch the years of baggage Reagent has carried (RAtoms, reactions, etc)
-* You get the performance improvements found in [recent React versions](https://vercel.com/blog/how-react-18-improves-application-performance)
+* You ditch the years of baggage Reagent has carried (RAtoms, reactions, batched updates, class components etc)
+* You get the performance improvements found in [recent React versions](https://vercel.com/blog/how-react-18-improves-application-performance) by staying closer to the React core
 
 ### What about RAtoms (local state)?
 
-HSX components are just React Function components under the hood with a bit of syntactic sugar. 
+HSX components are just React function components under the hood with a bit of syntactic sugar. 
 
-There are no state abstractions found in this library. We suggest you migrate any Reagent components with local state to use `react/useState`. The state hook is the most idiomatic way to deal with local state in React.
+There are no state abstractions found in this library. We suggest you migrate any Reagent components with local state to use `react/useState`. The `useState` hook is the most idiomatic way to deal with local state in React.
 
 ```clojure
 ;; (:require ["react" :as react])
@@ -92,24 +106,23 @@ There are no state abstractions found in this library. We suggest you migrate an
 
 ### What about re-frame?
 
-We have a companion library named [un-frame](https://github.com/factorhouse/un-frame) which is a drop-in replacement for re-frame without the dependency on Reagent. 
+We have a companion library named [Rfx](https://github.com/factorhouse/rfx) which is a drop-in replacement for re-frame without the dependency on Reagent.
 
-See the un-frame repo for more details.
+See the [Rfx repo](https://github.com/factorhouse/rfx) for more details.
 
 ### What about global application state?
 
-If re-frame is overkill for your application (or you have bespoke requirements), you can use standard React solutions to global application state management like:
+If Rfx is overkill for your application (or you have bespoke requirements), you can use standard React solutions for global application state management like:
 
-* [useSyncExternalStore](https://react.dev/reference/react/useSyncExternalStore) hook to subscribe to an external store (such as a plain Clojure atom or even a [Datascript database](https://github.com/tonsky/datascript))
-* Solutions found in the JS ecosystem like [zustand](https://github.com/pmndrs/zustand)
-* Using React [Reducer and Context](https://react.dev/learn/scaling-up-with-reducer-and-context) APIs
-
+* [useSyncExternalStore](https://react.dev/reference/react/useSyncExternalStore) hook to subscribe to an external store (such as a plain Clojure atom or even a [Datascript database](https://github.com/tonsky/datascript)). See [example]().
+* Solutions found in the JS ecosystem like [zustand](https://github.com/pmndrs/zustand). See [example]().
+* Using React [Reducer and Context](https://react.dev/learn/scaling-up-with-reducer-and-context) APIs. See [example]().
 
 ### How are props handled?
 
 Exactly the same as Reagent:
 
-```clojure 
+```clojure
 [:div {:on-click #(js/alert "Clicked!")}]
 ```
 
@@ -119,7 +132,7 @@ Would translate to:
 [:div #js {"onClick" #(js/alert "Clicked!")}]
 ```
 
-We use the same props serialisation logic as Reagent to make migrating to HSX as pain-free as possible.
+We use the same props serialization logic as Reagent to make migrating to HSX as pain-free as possible.
 
 ### What about component metadata (keys, display name etc)
 
@@ -127,23 +140,59 @@ The same as Reagent - use Clojure metadata. Say you want to pass a React key to 
 
 ```clojure 
 (defn component-with-seq []
-  [:ol
+  [:ol {:className "bg-slate-500"}
    (for [item items]
-     ^{:key (str "item-" (:id item))}
+     ^{:key (str "item-" (:id item)) :display-name (str "Seq" (:id item))}
      [item-component item])])
+```
+
+### What about `id` and `className` short-hands?
+
+The same as Reagent:
+
+```clojure 
+[:div#foo ...] ;; => [:div {:id "foo"}]
+[:div.foo.bar ...] ;; => [:div {:className "foo bar"}]
 ```
 
 ### What about Reagent class-based components?
 
-Class based components (the ones with lifecycle methods) have been out of style for almost a decade with React. 
+Class based components (the ones with lifecycle methods) have been out of style for almost a decade with React.
 
-If you wish to adopt HSX you will need to migrate Reagent class components to Function components.
+If you wish to adopt HSX you will need to migrate Reagent class components to function components. Generally this means rewriting the component to use hooks. 
 
-Generally this means rewriting the component to use hooks. 
+However, [error boundaries](https://react.dev/reference/react/Component#catching-rendering-errors-with-an-error-boundary) are the one place in the React ecosystem where class components may be required. We suggest using a wrapping library like [react-error-boundary](https://github.com/bvaughn/react-error-boundary) instead.
 
-However, the one place in the React ecosystem where Class components may be required are [error boundaries](https://react.dev/reference/react/Component#catching-rendering-errors-with-an-error-boundary). 
+If you still require class-based components, you can always extend `js/React.Component.prototype` yourself. See [this gist](https://gist.github.com/pesterhazy/2a25c82db0519a28e415b40481f84554) for an example.
 
-If the only place you are using Reagent class components is for error boundaries (like us) then we suggest using a library like [react-error-boundary](https://github.com/bvaughn/react-error-boundary) instead.
+### Are components memoized (like Reagent's implicit `componentDidUpdate` logic)?
+
+By default, yes, HSX components are wrapped in a [react/memo](https://react.dev/reference/react/memo) call with an appropriate `arePropsEqual?` predicate for ClojureScript data structures. 
+
+**Note**: unlike Reagent, memoization is a performance optimization, not a guarantee when using `react/memo`. Please refer to the official React documentation for more information.
+
+If you'd like to disable memoization globally, you can:
+
+```clojure
+{...
+ :builds
+ {:app
+  {:target :browser
+   ...
+   :modules {:app {:entries [your.app]}}
+
+   :closure-defines {io.factorhouse.hsx/USE_MEMO false}
+   
+   }}}
+```
+
+If you'd like to disable/enable memoization per-component, you can supply `:memo?` as metadata to the component vector:
+
+```clojure 
+[:div 
+ ^{:memo? false} 
+ [my-hsx-comp arg1 arg2]]
+```
 
 ### What about Fragments?
 
@@ -168,9 +217,21 @@ The same as Reagent. Denoted by `:>`
               :options options}])
 ```
 
+### Is there a way to bypass JavaScript component props serialization?
+
+Yes, pass a JS Object instead:
+
+```clojure 
+;; (:require ["react-select" :as Select])
+
+(defn dropdown-example [options]
+  [:> Select #js {"onChange" #(js/alert "Data changed") 
+                  "options" options}])
+```
+
 ### How do I use a HSX component from within a JavaScript component?
 
-If we use [react-error-boundary](https://github.com/bvaughn/react-error-boundary) as an example:
+Use `hsx/reactify-component`. If we use [react-error-boundary](https://github.com/bvaughn/react-error-boundary) as an example:
 
 ```clojure 
 ;; (:require ["react-error-boundary" :refer [ErrorBoundary]] 
@@ -192,14 +253,11 @@ If we use [react-error-boundary](https://github.com/bvaughn/react-error-boundary
 
 ### How are errors handled?
 
-
 HSX has a customisable error handler. By default, an `ex-info` is thrown when an error is encountered. This `ex-info` object will contain:
 
 * The message - a human-readable message describing the error
 * The ex-data - context about the error: the originating hiccup, the failing element, the type of error and so forth
-* The originating error (if-any)
-
-You can classify HSX errors as syntax errors (eg malformed Hiccup) thrown when HSX attempts to compile your code to React elements. HSX's error handling will not pick up errors thrown during the React render lifecycle, eg errors caused by invalid business logic within your app.
+* The original exception
 
 Error handling is extensible!
 
@@ -248,6 +306,6 @@ You can then extend the `io.factorhouse.hsx.core/error-handler` multimethod for 
 
 ## Copyright and License
 
-Copyright © 2021-2025 Factor House Pty Ltd.
+Copyright © 2025 Factor House Pty Ltd.
 
 Distributed under the Apache-2.0 License, the same as Apache Kafka.
