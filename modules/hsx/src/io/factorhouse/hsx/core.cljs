@@ -34,11 +34,20 @@
       (js/console.warn "Failed to construct a display name from HSX component, returning 'Unknown'")
       "Unknown")))
 
+(def react-special-components
+  #{"react.profiler"
+    "react.strict_mode"
+    "react.suspense"})
+
 (defn- react-component?
   [x]
   ;; Naive predicate but good enough, does not check  x.prototype.isReactComponent for class components etc...
   ;; Which is fine as React compiler will throw a less specific exception in this circumstance
-  (or (fn? x) (object? x)))
+  (or (fn? x)
+      (object? x)
+      ;; for react/Profiler etc
+      (and (identical? (type x) js/Symbol)
+           (contains? react-special-components (.-description x)))))
 
 (defn- create-react-element
   [original-hsx elem props children]
