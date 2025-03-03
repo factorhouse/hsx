@@ -74,6 +74,21 @@
            :error-type :props-serialization-error}
           e))))
 
+(defn- hsx-comp
+  [props]
+  (let [elem-f    (obj/get props "element")
+        elem-args (obj/get props "args")]
+    ;; TODO: try/catch within here, error handling etc
+    (create-element (apply elem-f elem-args))))
+
+(defn- are-props-equal?
+  [prev-props next-props]
+  (= (obj/get prev-props "args")
+     (obj/get next-props "args")))
+
+(def hsx-memo
+  (react/memo hsx-comp are-props-equal?))
+
 (defn- create-element-vector
   [[elem-type & args :as hsx]]
   (cond
@@ -115,29 +130,7 @@
           display-name  (or (:display-name outer-props)
                             (:displayName outer-props)
                             (hsx-component->display-name elem-type))
-          hsx-comp      (fn [props]
-                          (try
-                            (let [elem-f    (obj/get props "element")
-                                  elem-args (obj/get props "args")]
-                              (create-element (apply elem-f elem-args)))
-                            (catch :default e
-                              (handle-error* (str "Failed to create React Element from provided HSX: unhandled exception when evaluating HSX component named: '" display-name "'.")
-                                             {:hsx          hsx
-                                              :display-name display-name
-                                              :elem         elem-type
-                                              :args         args
-                                              :error-type   :hsx-component-error}
-                                             e))))
-          returned-comp (if (:memo? outer-props)
-                          (react/memo hsx-comp
-                                      (fn [prev-props next-props]
-                                        ;; ^{:memo true}
-                                        (prn "Diff => " display-name
-                                             (= (obj/get prev-props "args")
-                                                (obj/get next-props "args")))
-                                        (= (obj/get prev-props "args")
-                                           (obj/get next-props "args"))))
-                          hsx-comp)
+          returned-comp (if (:memo? outer-props) hsx-memo hsx-comp)
           props         (or (hsx-props->react-props hsx outer-props)
                             #js {})]
       (obj/set hsx-comp "displayName" display-name)
