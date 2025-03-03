@@ -86,7 +86,7 @@
   (= (obj/get prev-props "args")
      (obj/get next-props "args")))
 
-(def hsx-memo
+(def ^:private hsx-comp-memo
   (react/memo hsx-comp are-props-equal?))
 
 (defn- create-element-vector
@@ -130,7 +130,7 @@
           display-name  (or (:display-name outer-props)
                             (:displayName outer-props)
                             (hsx-component->display-name elem-type))
-          returned-comp (if (:memo? outer-props) hsx-memo hsx-comp)
+          returned-comp (if (:memo? outer-props) hsx-comp-memo hsx-comp)
           props         (or (hsx-props->react-props hsx outer-props)
                             #js {})]
       (obj/set hsx-comp "displayName" display-name)
