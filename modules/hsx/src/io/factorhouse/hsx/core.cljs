@@ -20,16 +20,21 @@
   [message ctx error]
   (handle-error (keyword ERROR-HANDLER) message ctx error))
 
+(defn multi-method?
+  [x]
+  (instance? cljs.core/MultiFn x))
+
 (defn- hsx-component?
   [x]
-  (or (fn? x) (instance? cljs.core/MultiFn x)))
+  (or (fn? x) (multi-method? x)))
 
 (defn- hsx-component->display-name
   [f]
   (try
-    (or (.-displayName f)
-        (.-name f)
-        (pr-str f))
+    (some-> (or (.-displayName f)
+                (.-name f)
+                (pr-str f))
+            (pr-str))
     (catch :default _
       (js/console.warn "Failed to construct a display name from HSX component, returning 'Unknown'")
       "Unknown")))
@@ -55,7 +60,7 @@
     (apply react/createElement elem props children)
     (catch :default e
       (handle-error*
-       "Failed to create React Element from provided HSX: exception calling react/createElement."
+       (str "Failed to create React Element from provided HSX: exception calling react/createElement.")
        {:hsx        original-hsx
         :elem       elem
         :props      props
@@ -77,14 +82,23 @@
 (defn- hsx-comp
   [props]
   (let [elem-f    (obj/get props "element")
-        elem-args (obj/get props "args")]
-    ;; TODO: try/catch within here, error handling etc
-    (create-element (apply elem-f elem-args))))
+        elem-args (obj/get props "args")
+        comp*     (try (apply elem-f elem-args)
+                       (catch :default e
+                         (let [display-name (hsx-component->display-name elem-f)]
+                           (handle-error* (str "Unhandled exception calling Hsx component " display-name)
+                                          {:props      elem-args
+                                           :error-type :unhandled-exception
+                                           :elem       elem-f}
+                                          e))))]
+    (create-element comp*)))
 
 (defn- are-props-equal?
   [prev-props next-props]
-  (= (obj/get prev-props "args")
-     (obj/get next-props "args")))
+  (and (= (obj/get prev-props "args")
+          (obj/get next-props "args"))
+       (= (obj/get prev-props "element")
+          (obj/get next-props "element"))))
 
 (def ^:private hsx-comp-memo
   (react/memo hsx-comp are-props-equal?))
@@ -133,6 +147,11 @@
           returned-comp (if (:memo? outer-props) hsx-comp-memo hsx-comp)
           props         (or (hsx-props->react-props hsx outer-props)
                             #js {})]
+
+      (when ^boolean js/goog.DEBUG
+        (when (and (multi-method? elem-type) (not (:key outer-props)))
+          (js/console.warn "HSX: Multimethod component" display-name "should be created with ^:key metadata.")))
+
       (obj/set hsx-comp "displayName" display-name)
       (js/Object.defineProperty hsx-comp "name" #js {"value" display-name})
       (obj/extend props #js {"element" elem-type "args" args})
