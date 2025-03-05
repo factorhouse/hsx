@@ -145,6 +145,13 @@
                             (:displayName outer-props)
                             (hsx-component->display-name elem-type))
           returned-comp (if (:memo? outer-props) hsx-comp-memo hsx-comp)
+          wrapped-comp  (if ^boolean js/goog.DEBUG
+                          (let [f (fn hsx-comp-wrapper* [props]
+                                    (create-react-element hsx returned-comp props nil))]
+                            (obj/set f "displayName" display-name)
+                            (js/Object.defineProperty f "name" #js {"value" display-name})
+                            f)
+                          returned-comp)
           props         (or (hsx-props->react-props hsx outer-props)
                             #js {})]
 
@@ -152,10 +159,8 @@
         (when (and (multi-method? elem-type) (not (:key outer-props)))
           (js/console.warn "HSX: Multimethod component" display-name "should be created with ^:key metadata.")))
 
-      (obj/set hsx-comp "displayName" display-name)
-      (js/Object.defineProperty hsx-comp "name" #js {"value" display-name})
       (obj/extend props #js {"element" elem-type "args" args})
-      (create-react-element hsx returned-comp props nil))
+      (create-react-element hsx wrapped-comp props nil))
 
     (keyword? elem-type)
     (let [{:keys [tag id className]} (tag/cached-parse elem-type)
