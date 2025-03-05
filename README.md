@@ -61,6 +61,58 @@ HSX exposes two primary functions:
   (.render root (hsx/create-element [test-ui])))
 ```
 
+## Components
+
+Components are just Clojure functions. Like Reagent, arguments to components can be multi-arity. 
+
+This is in contrast to React where components are expected to be a single-arity function (the props object). Use `reactify-component` to interop with the JS world.
+
+There are two types of components in HSX:
+
+### Named components
+
+Named components are functions wrapped with the `io.factorhouse.hsx.core/component` macro:
+
+```clojure 
+(:requrie [io.factorhouse.hsx.core :as hsx])
+
+(def my-comp
+  (hsx/component 
+    :MyComp
+    (fn [x y z]
+      [:div x y z])))
+```
+
+#### Pros
+
+* Less runtime overhead than a plain Clojure function
+* React call stacks/exceptions play nicely with component
+* Usable display name in the React devtools component tree
+
+#### Cons
+
+* Macro complexity over plain Clojure function
+
+### Anonymous components
+
+Anonymous components are plain Clojure functions, just like Reagent:
+
+```clojure
+(defn my-comp [x y z] 
+  [:div x y z])
+```
+
+#### Pros
+
+* Existing Reagent code works with this pattern
+* Simple
+
+#### Cons
+
+* More runtime overhead than `defcomponent`
+* React call stacks/exceptions are not as friendly
+* Display name in the React devtools component tree is `AnonymousHsxComponent`
+
 ## Migrating from Reagent
 
 If you have an existing Reagent codebase, you can use the `io.factorhouse/hsx-reagent-bridge ` library to ease some of the migration pains:

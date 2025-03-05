@@ -1,24 +1,13 @@
 (ns io.factorhouse.hsx.core)
 
-(defmacro defcomponent
-  [name args & body]
-  `(def ~name
-     (let [comp# (fn [props#]
-                   (let [elem-args# (obj-get props# "args")
-                         comp#      (let [~args elem-args#]
-                                      (do ~@body))]
-                     (create-element comp#)))]
-       (set-display-name comp# ~(str name))
-       (map->Component {:comp comp#
-                        :memo (react-memo comp# are-props-equal?)}))))
-
 (defmacro component
-  [args & body]
-  `(let [comp# (fn [props#]
-                 (let [elem-args# (obj-get props# "args")
-                       comp#      (let [~args elem-args#]
-                                    (do ~@body))]
-                   (create-element comp#)))]
-     (set-display-name comp# ~(str (gensym "component")))
-     (map->Component {:comp comp#
-                      :memo (react-memo comp# are-props-equal?)})))
+  [display-name component-f]
+  `(let [comp#         (fn ~(symbol display-name) [props#]
+                         (let [elem-args# (obj-get props# "args")
+                               comp#      (~component-f elem-args#)]
+                           (create-element comp#)))
+         display-name# ~(name display-name)]
+     (set-display-name comp# display-name#)
+     (map->Component {:comp         comp#
+                      :display-name display-name#
+                      :memo         (react-memo comp# are-props-equal?)})))
