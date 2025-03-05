@@ -37,7 +37,7 @@
             (pr-str))
     (catch :default _
       (js/console.warn "Failed to construct a display name from HSX component, returning 'Unknown'")
-      "Unknown")))
+      "Hsx<Unknown>")))
 
 (def react-special-components
   #{"react.profiler"
@@ -93,6 +93,8 @@
                                           e))))]
     (create-element comp*)))
 
+(obj/set hsx-comp "displayName" "__ProxiedHsxComp")
+
 (defn- are-props-equal?
   [prev-props next-props]
   (and (= (obj/get prev-props "args")
@@ -102,6 +104,8 @@
 
 (def ^:private hsx-comp-memo
   (react/memo hsx-comp are-props-equal?))
+
+(obj/set hsx-comp-memo "displayName" "__ProxiedHsxCompMemo")
 
 (defn- create-element-vector
   [[elem-type & args :as hsx]]
@@ -145,15 +149,20 @@
                             (:displayName outer-props)
                             (hsx-component->display-name elem-type))
           returned-comp (if (:memo? outer-props) hsx-comp-memo hsx-comp)
+          returned-comp (if ^boolean js/goog.DEBUG
+                          (fn hsx-comp-wrapper* [props]
+                            (create-react-element hsx returned-comp props nil))
+                          returned-comp)
           props         (or (hsx-props->react-props hsx outer-props)
                             #js {})]
 
       (when ^boolean js/goog.DEBUG
         (when (and (multi-method? elem-type) (not (:key outer-props)))
-          (js/console.warn "HSX: Multimethod component" display-name "should be created with ^:key metadata.")))
+          (js/console.warn "HSX: Multimethod component" display-name "should be created with ^:key metadata."))
 
-      (obj/set hsx-comp "displayName" display-name)
-      (js/Object.defineProperty hsx-comp "name" #js {"value" display-name})
+        (obj/set returned-comp "displayName" display-name)
+        (js/Object.defineProperty returned-comp "name" #js {"value" display-name}))
+
       (obj/extend props #js {"element" elem-type "args" args})
       (create-react-element hsx returned-comp props nil))
 
