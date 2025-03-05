@@ -1,6 +1,7 @@
 (ns io.factorhouse.hsx.core
   (:require-macros [io.factorhouse.hsx.core])
   (:require ["react" :as react]
+            [clojure.string :as str]
             [goog.object :as obj]
             [io.factorhouse.hsx.props :as props]
             [io.factorhouse.hsx.tag :as tag]))
@@ -25,7 +26,7 @@
   [message ctx error]
   (handle-error (keyword ERROR-HANDLER) message ctx error))
 
-(defn multi-method?
+(defn- multi-method?
   [x]
   (instance? cljs.core/MultiFn x))
 
@@ -36,15 +37,17 @@
 (defn- hsx-component->display-name
   [f]
   (try
-    (some-> (or (.-displayName f)
-                (.-name f)
-                (pr-str f))
-            (pr-str))
+    (let [display-name (or (.-displayName f)
+                           (if (multi-method? f)
+                             (some-> (.-name f) (obj/get "str"))
+                             (.-name f))
+                           (pr-str f))]
+      (when-not (str/blank? display-name)
+        display-name))
     (catch :default _
-      (js/console.warn "Failed to construct a display name from HSX component, returning 'Unknown'")
-      "Hsx<Unknown>")))
+      (js/console.warn "Failed to construct a display name from HSX component, returning nil."))))
 
-(def react-special-components
+(def ^:private react-special-components
   #{"react.profiler"
     "react.strict_mode"
     "react.suspense"})
@@ -100,24 +103,17 @@
 
 (obj/set anon-hsx-comp "displayName" "AnonymousHsxComponent")
 
-(defn- are-anon-props-equal?
-  [prev-props next-props]
-  (and (= (obj/get prev-props "args")
-          (obj/get next-props "args"))
-       (= (obj/get prev-props "element")
-          (obj/get next-props "element"))))
-
-(def ^:private anon-hsx-comp-memo
-  (react/memo anon-hsx-comp are-anon-props-equal?))
-
 (defn- are-props-equal?
   [prev-props next-props]
   (and (= (obj/get prev-props "args")
           (obj/get next-props "args"))))
 
+(def ^:private anon-hsx-comp-memo
+  (react/memo anon-hsx-comp are-props-equal?))
+
 (defrecord Component [])
 
-(defn hsx-component? [x]
+(defn- hsx-component? [x]
   (instance? Component x))
 
 (defn- create-element-vector
@@ -157,7 +153,7 @@
       (create-react-element hsx f props (map create-element children)))
 
     (hsx-component? elem-type)
-    (let [outer-props (merge {:memo? USE_MEMO} (meta hsx))
+    (let [outer-props   (merge {:memo? USE_MEMO} (meta hsx))
           returned-comp (if (:memo? outer-props) (:memo elem-type) (:comp elem-type))
           props         (or (hsx-props->react-props hsx outer-props) #js {})]
       (obj/extend props #js {"args" args})
@@ -165,14 +161,12 @@
 
     (anon-hsx-component? elem-type)
     (let [outer-props   (merge {:memo? USE_MEMO} (meta hsx))
-          display-name  (hsx-component->display-name elem-type)
           returned-comp (if (:memo? outer-props) anon-hsx-comp-memo anon-hsx-comp)
           props         (or (hsx-props->react-props hsx outer-props)
                             #js {})]
-
       (when ^boolean js/goog.DEBUG
         (when (and (multi-method? elem-type) (not (:key outer-props)))
-          (js/console.warn "HSX: Multimethod component" display-name "should be created with ^:key metadata.")))
+          (js/console.warn "HSX: Multimethod component" (hsx-component->display-name elem-type) "should be created with ^:key metadata.")))
 
       (obj/extend props #js {"element" elem-type "args" args})
       (create-react-element hsx returned-comp props nil))

@@ -49,6 +49,7 @@ HSX exposes two primary functions:
   (:require [io.factorhouse.hsx.core :as hsx]
             ["react-dom/client" :refer [createRoot]]))
 
+;; Create an anonymous Hsx component (like Reagent) 
 (defn test-ui []
   [:div {:on-click #(js/alert "Clicked!")}
    "Hello world"])
