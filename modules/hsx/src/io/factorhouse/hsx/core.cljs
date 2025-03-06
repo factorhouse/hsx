@@ -154,7 +154,7 @@
 
     (hsx-component? elem-type)
     (let [outer-props   (merge {:memo? USE_MEMO} (meta hsx))
-          returned-comp (if (:memo? outer-props) (:memo elem-type) (:comp elem-type))
+          returned-comp (if (:memo? outer-props) (:proxy-memo elem-type) (:proxy elem-type))
           props         (or (hsx-props->react-props hsx outer-props) #js {})]
       (obj/extend props #js {"args" args})
       (create-react-element hsx returned-comp props nil))
