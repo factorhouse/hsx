@@ -217,6 +217,11 @@
     :else
     this))
 
+(defn shallow-js->cljs [x]
+  (persistent!
+    (reduce (fn [r k] (assoc! r (keyword k) (obj/get x k)))
+            (transient {}) (js-keys x))))
+
 (defn reactify-component
   "Returns a React Function component that can be called outside a HSX context.
 
@@ -235,4 +240,4 @@
    ```"
   [comp]
   (fn [props]
-    (create-element [comp (js->clj props :keywordize-keys true)])))
+    (create-element [comp (shallow-js->cljs props)])))
