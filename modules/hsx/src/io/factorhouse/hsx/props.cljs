@@ -87,3 +87,9 @@
 
     :else
     nil))
+
+(defn shallow-js->cljs
+  [x]
+  (persistent!
+   (reduce (fn [r k] (assoc! r (keyword k) (obj/get x k)))
+           (transient {}) (js-keys x))))

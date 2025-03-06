@@ -87,29 +87,57 @@
            :error-type :props-serialization-error}
           e))))
 
-(defn- anon-hsx-comp
-  [props]
-  (let [elem-f    (obj/get props "element")
-        elem-args (obj/get props "args")
-        comp*     (try (apply elem-f elem-args)
-                       (catch :default e
-                         (let [display-name (hsx-component->display-name elem-f)]
-                           (handle-error* (str "Unhandled exception calling Hsx component " display-name)
-                                          {:props      elem-args
-                                           :error-type :unhandled-exception
-                                           :elem       elem-f}
-                                          e))))]
-    (create-element comp*)))
+(defn- anon-hsx-comp-factory []
+  (fn [props]
+    (let [elem-f    (obj/get props "element")
+          elem-args (obj/get props "args")
+          comp*     (try (apply elem-f elem-args)
+                         (catch :default e
+                           (let [display-name (hsx-component->display-name elem-f)]
+                             (handle-error* (str "Unhandled exception calling Hsx component " display-name)
+                                            {:props      elem-args
+                                             :error-type :unhandled-exception
+                                             :elem       elem-f}
+                                            e))))]
+      (create-element comp*))))
 
-(obj/set anon-hsx-comp "displayName" "AnonymousHsxComponent")
+(defonce ^:private anon-hsx-comp
+  (let [f (anon-hsx-comp-factory)]
+    (obj/set f "displayName" "AnonymousHsxComponent")
+    f))
 
 (defn- are-props-equal?
   [prev-props next-props]
-  (and (= (obj/get prev-props "args")
-          (obj/get next-props "args"))))
+  (= (obj/get prev-props "args")
+     (obj/get next-props "args")))
 
-(def ^:private anon-hsx-comp-memo
+(defonce ^:private anon-hsx-comp-dev
+  (let [comp-cache   (volatile! {})
+        comp-factory (fn [elem-f memo?]
+                       (or (get @comp-cache elem-f)
+                           (let [comp*        (anon-hsx-comp-factory)
+                                 wrapped-comp (if memo?
+                                                (react/memo comp* are-props-equal?)
+                                                comp*)]
+                             (obj/set comp* "displayName" (hsx-component->display-name elem-f))
+                             (vswap! comp-cache assoc elem-f wrapped-comp)
+                             wrapped-comp)))]
+    {:factory comp-factory
+     :reset   (fn [] (vreset! comp-cache {}))}))
+
+(defn- anon-hsx-comp-memo-factory []
   (react/memo anon-hsx-comp are-props-equal?))
+
+(defonce ^:private anon-hsx-comp-memo
+  (volatile! (anon-hsx-comp-memo-factory)))
+
+(defn memo-clear!
+  "Resets the memoized component cache. Useful to call in dev after hot reloading."
+  []
+  (if ^boolean js/goog.DEBUG
+    (let [reset-f (:reset anon-hsx-comp-dev)]
+      (reset-f))
+    (vreset! anon-hsx-comp-memo (anon-hsx-comp-factory))))
 
 (defrecord Component [])
 
@@ -161,7 +189,19 @@
 
     (anon-hsx-component? elem-type)
     (let [outer-props   (merge {:memo? USE_MEMO} (meta hsx))
-          returned-comp (if (:memo? outer-props) anon-hsx-comp-memo anon-hsx-comp)
+          returned-comp (if ^boolean js/goog.DEBUG
+                          ;; There are two approaches to creating anon hsx comps:
+                          ;; 1) In dev - we use a component cache that we control...
+                          ;;    - Pro: better display names
+                          ;;    - Con: possibly unbounded memory growth (though ok in dev, cos cache gets blown away every hot reload)
+                          ;;
+                          ;; 2) In prod - a defonce'd anon-hsx-comp
+                          ;;     - Pro: easy to reason about, stable value
+                          ;;     - Con: no display names
+                          ;;     - Con: does not play well with hot reload (when memoisation is enabled)
+                          (let [factory (:factory anon-hsx-comp-dev)]
+                            (factory elem-type (:memo? outer-props)))
+                          (if (:memo? outer-props) @anon-hsx-comp-memo anon-hsx-comp))
           props         (or (hsx-props->react-props hsx outer-props)
                             #js {})]
       (when ^boolean js/goog.DEBUG
@@ -224,6 +264,8 @@
 
    Requires that the HSX component accept everything in a single props map, including its children.
 
+   Second argument (optional): the props deserialization function. By default, is a shallow js->cljs.
+
    ```clojure
    (defn exported [props]
      [:div \"Hi, \" (:name props)])
@@ -233,6 +275,8 @@
   (defn could-be-jsx []
     (react/createElement react-comp #js {:name \"world\"}))
    ```"
-  [comp]
-  (fn [props]
-    (create-element [comp (js->clj props :keywordize-keys true)])))
+  ([comp]
+   (reactify-component comp props/shallow-js->cljs))
+  ([comp props-deserialization-fn]
+   (fn [props]
+     (create-element [comp (props-deserialization-fn props)]))))
