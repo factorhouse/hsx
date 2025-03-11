@@ -268,7 +268,5 @@
   ([comp]
    (reactify-component comp props/shallow-js->cljs))
   ([comp props-deserialization-fn]
-   (io.factorhouse.hsx.core/component
-    "io.factorhouse.hsx.core/reactify-component"
-    (fn reactify-component-proxy [props]
-      (create-element [comp (props-deserialization-fn props)])))))
+   (fn reactify-component-proxy [props]
+     (create-element [comp (props-deserialization-fn props)]))))
