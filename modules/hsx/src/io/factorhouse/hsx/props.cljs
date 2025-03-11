@@ -33,9 +33,9 @@
        :charset "charSet"})
 
 (defn cache-get
-  [o k]
-  (when ^boolean (.hasOwnProperty o k)
-    (obj/get o k)))
+  [^js o k]
+  (let [v (goog.object/get o k)]
+    (when-not (undefined? v) v)))
 
 (defn cached-prop-name
   [k]

@@ -6,14 +6,16 @@
 ;; From Weavejester's Hiccup, via pump:
 (def ^{:doc "Regular expression that parses a CSS-style id and class
              from a tag name."}
-  re-tag #"([^\s\.#]+)(?:#([^\s\.#]+))?(?:\.([^\s#]+))?")
+  re-tag
+  #"([^\s\.#]+)(?:#([^\s\.#]+))?(?:\.([^\s#]+))?")
 
-(def tag-name-cache #js {})
+(defonce tag-name-cache
+  #js {})
 
 (defn cache-get
-  [o k]
-  (when ^boolean (.hasOwnProperty o k)
-    (obj/get o k)))
+  [^js o k]
+  (let [v (goog.object/get o k)]
+    (when-not (undefined? v) v)))
 
 (defn- parse-tag
   [hiccup-tag]
