@@ -7,7 +7,7 @@
             [io.factorhouse.hsx.tag :as tag]))
 
 (def ^:private react-memo react/memo)
-(defn ^:private set-display-name [comp display-name] (obj/set comp "displayName" display-name))
+(defn- set-display-name [comp display-name] (obj/set comp "displayName" display-name))
 (def ^:private obj-get obj/get)
 
 (goog-define USE_MEMO true)
@@ -69,7 +69,7 @@
     (apply react/createElement elem props children)
     (catch :default e
       (handle-error*
-       (str "Failed to create React Element from provided HSX: exception calling react/createElement.")
+       "Failed to create React Element from provided HSX: exception calling react/createElement."
        {:hsx        original-hsx
         :elem       elem
         :props      props
@@ -125,8 +125,7 @@
 (defn memo-clear!
   "Resets the memoized component cache. Useful to call in dev after hot reloading."
   []
-  (if ^boolean js/goog.DEBUG
-    (vreset! component-factory-cache (js/WeakMap.))))
+  (vreset! component-factory-cache (js/WeakMap.)))
 
 (defrecord Component [])
 

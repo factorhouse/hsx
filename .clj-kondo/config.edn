@@ -1,0 +1,3 @@
+{:linters {:unused-private-var {:exclude [io.factorhouse.hsx.core/react-memo
+                                          io.factorhouse.hsx.core/obj-get
+                                          io.factorhouse.hsx.core/set-display-name]}}}
