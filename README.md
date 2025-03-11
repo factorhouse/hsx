@@ -170,7 +170,7 @@ If you still require class-based components, you can always extend `js/React.Com
 
 By default, yes, HSX components are wrapped in a [react/memo](https://react.dev/reference/react/memo) call with an appropriate `arePropsEqual?` predicate for ClojureScript data structures. 
 
-**Note**: unlike Reagent, memoization is a performance optimization, not a guarantee when using `react/memo`. Please refer to the official React documentation for more information.
+**Note**: unlike Reagent, memoization is a performance optimization. Please refer to the [official React documentation](https://react.dev/reference/react/memo) for more information.
 
 If you'd like to disable memoization globally, you can:
 
@@ -186,7 +186,7 @@ If you'd like to disable memoization globally, you can:
    }}}
 ```
 
-If you'd like to disable/enable memoization per-component, you can supply `:memo?` as metadata to the component vector:
+If you'd like to disable/enable memoization per-component, you can supply `:memo?` key as metadata to the component vector:
 
 ```clojure 
 [:div 
@@ -256,7 +256,7 @@ Use `hsx/reactify-component`. If we use [react-error-boundary](https://github.co
 HSX has a customisable error handler. By default, an `ex-info` is thrown when an error is encountered. This `ex-info` object will contain:
 
 * The message - a human-readable message describing the error
-* The ex-data - context about the error: the originating hiccup, the failing element, the type of error and so forth
+* ex-data - context about the error: the originating hiccup, the failing element, the type of error and so forth
 * The original exception
 
 Error handling is extensible!
