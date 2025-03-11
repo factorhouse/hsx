@@ -40,12 +40,13 @@
     (let [display-name (or (.-displayName f)
                            (if (multi-method? f)
                              (some-> (.-name f) (obj/get "str"))
-                             (.-name f))
-                           (pr-str f))]
-      (when-not (str/blank? display-name)
-        display-name))
+                             (.-name f)))]
+      (if-not (str/blank? display-name)
+        display-name
+        "AnonymousHSXComponent"))
     (catch :default _
-      (js/console.warn "Failed to construct a display name from HSX component, returning nil."))))
+      (js/console.warn "Failed to construct a display name from HSX component, returning nil.")
+      "Unknown")))
 
 (def ^:private react-special-components
   #{"react.profiler"
