@@ -77,9 +77,9 @@ Named components are functions wrapped with the `io.factorhouse.hsx.core/compone
 (:requrie [io.factorhouse.hsx.core :as hsx])
 
 (def my-comp
-  (hsx/component 
-    :MyComp
-    (fn [x y z]
+  (hsx/component
+    :MyComp ;; <- Components display name
+    (fn [x y z] ;; <- Component function
       [:div x y z])))
 ```
 

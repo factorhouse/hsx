@@ -87,10 +87,10 @@
            :error-type :props-serialization-error}
           e))))
 
-(defn- anon-hsx-comp-factory []
+(defn- anon-hsx-comp-factory
+  [elem-f]
   (fn [props]
-    (let [elem-f    (obj/get props "element")
-          elem-args (obj/get props "args")
+    (let [elem-args (obj/get props "args")
           comp*     (try (apply elem-f elem-args)
                          (catch :default e
                            (let [display-name (hsx-component->display-name elem-f)]
@@ -101,43 +101,31 @@
                                             e))))]
       (create-element comp*))))
 
-(defonce ^:private anon-hsx-comp
-  (let [f (anon-hsx-comp-factory)]
-    (obj/set f "displayName" "AnonymousHsxComponent")
-    f))
-
 (defn- are-props-equal?
   [prev-props next-props]
   (= (obj/get prev-props "args")
      (obj/get next-props "args")))
 
-(defonce ^:private anon-hsx-comp-dev
-  (let [comp-cache   (volatile! {})
-        comp-factory (fn [elem-f memo?]
-                       (or (get @comp-cache elem-f)
-                           (let [comp*        (anon-hsx-comp-factory)
-                                 wrapped-comp (if memo?
-                                                (react/memo comp* are-props-equal?)
-                                                comp*)]
-                             (obj/set comp* "displayName" (hsx-component->display-name elem-f))
-                             (vswap! comp-cache assoc elem-f wrapped-comp)
-                             wrapped-comp)))]
-    {:factory comp-factory
-     :reset   (fn [] (vreset! comp-cache {}))}))
+(defonce ^:private component-factory-cache
+  (volatile! (js/WeakMap.)))
 
-(defn- anon-hsx-comp-memo-factory []
-  (react/memo anon-hsx-comp are-props-equal?))
-
-(defonce ^:private anon-hsx-comp-memo
-  (volatile! (anon-hsx-comp-memo-factory)))
+(defn anon-hsx-component
+  [elem-f memo?]
+  (let [weak-map ^js @component-factory-cache]
+    (if-let [proxy-comp (.get weak-map elem-f)]
+      proxy-comp
+      (let [proxy-comp' (anon-hsx-comp-factory elem-f)
+            proxy-comp  (cond-> proxy-comp'
+                          memo? (react/memo are-props-equal?))]
+        (obj/set proxy-comp' "displayName" (hsx-component->display-name elem-f))
+        (.set weak-map elem-f proxy-comp)
+        proxy-comp))))
 
 (defn memo-clear!
   "Resets the memoized component cache. Useful to call in dev after hot reloading."
   []
   (if ^boolean js/goog.DEBUG
-    (let [reset-f (:reset anon-hsx-comp-dev)]
-      (reset-f))
-    (vreset! anon-hsx-comp-memo (anon-hsx-comp-factory))))
+    (vreset! component-factory-cache (js/WeakMap.))))
 
 (defrecord Component [])
 
@@ -189,26 +177,14 @@
 
     (anon-hsx-component? elem-type)
     (let [outer-props   (merge {:memo? USE_MEMO} (meta hsx))
-          returned-comp (if ^boolean js/goog.DEBUG
-                          ;; There are two approaches to creating anon hsx comps:
-                          ;; 1) In dev - we use a component cache that we control...
-                          ;;    - Pro: better display names
-                          ;;    - Con: possibly unbounded memory growth (though ok in dev, cos cache gets blown away every hot reload)
-                          ;;
-                          ;; 2) In prod - a defonce'd anon-hsx-comp
-                          ;;     - Pro: easy to reason about, stable value
-                          ;;     - Con: no display names
-                          ;;     - Con: does not play well with hot reload (when memoisation is enabled)
-                          (let [factory (:factory anon-hsx-comp-dev)]
-                            (factory elem-type (:memo? outer-props)))
-                          (if (:memo? outer-props) @anon-hsx-comp-memo anon-hsx-comp))
+          returned-comp (anon-hsx-component elem-type (:memo? outer-props))
           props         (or (hsx-props->react-props hsx outer-props)
                             #js {})]
       (when ^boolean js/goog.DEBUG
         (when (and (multi-method? elem-type) (not (:key outer-props)))
           (js/console.warn "HSX: Multimethod component" (hsx-component->display-name elem-type) "should be created with ^:key metadata.")))
 
-      (obj/extend props #js {"element" elem-type "args" args})
+      (obj/extend props #js {"args" args})
       (create-react-element hsx returned-comp props nil))
 
     (keyword? elem-type)
