@@ -44,7 +44,7 @@
       (if-not (str/blank? display-name)
         (let [display-name (-> display-name (str/replace "_" "-") (str/split "$"))]
           (str (str/join "." (butlast display-name)) "/" (last display-name)))
-        (str (gensym "anonymous-hsx-component"))))
+        "anonymous-hsx-component"))
     (catch :default _
       (js/console.warn "Failed to construct a display name from HSX component, returning nil."))))
 
@@ -95,7 +95,7 @@
           comp*     (try (apply elem-f elem-args)
                          (catch :default e
                            (let [display-name (hsx-component->display-name elem-f)]
-                             (handle-error* (str "Unhandled exception calling Hsx component " display-name)
+                             (handle-error* (str "Unhandled exception calling HSX component " display-name)
                                             {:props      elem-args
                                              :error-type :unhandled-exception
                                              :elem       elem-f}
@@ -124,7 +124,7 @@
 (defonce ^:private component-cache
   (volatile! (js/WeakMap.)))
 
-(defn anon-hsx-component
+(defn- anon-hsx-component
   [elem-f memo?]
   (let [weak-map ^js @component-cache]
     (if-let [proxy-comp (.get weak-map elem-f)]
@@ -196,7 +196,7 @@
                             #js {})]
       (when ^boolean js/goog.DEBUG
         (when (and (multi-method? elem-type) (not (:key outer-props)))
-          (js/console.warn "HSX: Multimethod component" (hsx-component->display-name elem-type) "should be created with ^:key metadata.")))
+          (js/console.warn "HSX: multimethod component" (hsx-component->display-name elem-type) "should be created with ^:key metadata.")))
 
       (obj/extend props #js {"args" args})
       (create-react-element hsx returned-comp props nil))
@@ -225,9 +225,9 @@
      nil)))
 
 (defn create-element
-  "Like react/createElement, but takes in some HSX and returns a React element.
+  "Like react/createElement, but takes in some HSX hiccup and returns a React element.
 
-  Should be called at the root of your application, where you render your view:
+  Generally called at the root of your application, where you render your UI:
 
   ```clojure
   (defonce root
@@ -268,5 +268,7 @@
   ([comp]
    (reactify-component comp props/shallow-js->cljs))
   ([comp props-deserialization-fn]
-   (fn [props]
-     (create-element [comp (props-deserialization-fn props)]))))
+   (io.factorhouse.hsx.core/component
+    "io.factorhouse.hsx.core/reactify-component"
+    (fn reactify-component-proxy [props]
+      (create-element [comp (props-deserialization-fn props)])))))

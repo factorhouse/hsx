@@ -2,7 +2,7 @@
 
 [![test](https://github.com/factorhouse/hsx/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/factorhouse/hsx/actions/workflows/test.yml)
 
-**HSX** is a ClojureScript library for writing React components using [Hiccup syntax](https://github.com/weavejester/hiccup). We believe Hiccup is the most idiomatic way to express HTML in Clojure.
+**HSX** is a ClojureScript library for writing React components using [Hiccup syntax](https://github.com/weavejester/hiccup). We believe Hiccup is the most idiomatic (and joyful) way to express HTML in Clojure.
 
 Think of HSX as a lightweight syntactic layer over React, much like [JSX](https://react.dev/learn/writing-markup-with-jsx) in the JavaScript world.
 
@@ -35,7 +35,7 @@ If you want to read more about the engineering challenge of moving a 100k+ LOC R
 
 ## Usage
 
-Using HSX is straightforward. The entire library is only about 200 lines of ClojureScript (with comments). HSX is designed to be as close to plain React as possible while retaining the expressive power of Hiccup.
+Using HSX is straightforward. The entire library is only about 300 lines of ClojureScript (with comments). HSX is designed to be as close to plain React as possible while retaining the expressive power of Hiccup.
 
 HSX exposes two primary functions:
 
@@ -60,58 +60,6 @@ HSX exposes two primary functions:
 (defn init []
   (.render root (hsx/create-element [test-ui])))
 ```
-
-## Components
-
-Components are just Clojure functions. Like Reagent, arguments to components can be multi-arity. 
-
-This is in contrast to React where components are expected to be a single-arity function (the props object). Use `reactify-component` to interop with the JS world.
-
-There are two types of components in HSX:
-
-### Named components
-
-Named components are functions wrapped with the `io.factorhouse.hsx.core/component` macro:
-
-```clojure 
-(:requrie [io.factorhouse.hsx.core :as hsx])
-
-(def my-comp
-  (hsx/component
-    :MyComp ;; <- Components display name
-    (fn [x y z] ;; <- Component function
-      [:div x y z])))
-```
-
-#### Pros
-
-* Less runtime overhead than a plain Clojure function
-* React call stacks/exceptions play nicely with component
-* Usable display name in the React devtools component tree
-
-#### Cons
-
-* Macro complexity over plain Clojure function
-
-### Anonymous components
-
-Anonymous components are plain Clojure functions, just like Reagent:
-
-```clojure
-(defn my-comp [x y z] 
-  [:div x y z])
-```
-
-#### Pros
-
-* Existing Reagent code works with this pattern
-* Simple
-
-#### Cons
-
-* More runtime overhead than `defcomponent`
-* React call stacks/exceptions are not as friendly
-* Display name in the React devtools component tree is `AnonymousHsxComponent`
 
 ## Migrating from Reagent
 
@@ -187,7 +135,7 @@ Would translate to:
 
 We use the same props serialization logic as Reagent to make migrating to HSX as pain-free as possible.
 
-### What about component metadata (keys, display name etc)
+### What about component metadata (keys etc)
 
 The same as Reagent - use Clojure metadata. Say you want to pass a React key to a component:
 
@@ -195,7 +143,7 @@ The same as Reagent - use Clojure metadata. Say you want to pass a React key to 
 (defn component-with-seq []
   [:ol {:className "bg-slate-500"}
    (for [item items]
-     ^{:key (str "item-" (:id item)) :display-name (str "Seq" (:id item))}
+     ^{:key (str "item-" (:id item))}
      [item-component item])])
 ```
 
@@ -231,10 +179,9 @@ If you'd like to disable memoization globally, you can:
  :builds
  {:app
   {:target :browser
-   ...
    :modules {:app {:entries [your.app]}}
 
-   :closure-defines {io.factorhouse.hsx/USE_MEMO false}
+   :closure-defines {io.factorhouse.hsx.core/USE_MEMO false}
    
    }}}
 ```
