@@ -90,7 +90,7 @@
 
 (defn- anon-hsx-comp-factory
   [elem-f]
-  (fn [props]
+  (fn anon-hsx-comp-proxy [props]
     (let [elem-args (obj/get props "args")
           comp*     (try (apply elem-f elem-args)
                          (catch :default e
@@ -108,7 +108,7 @@
      (obj/get next-props "args")))
 
 ;; The way that React function components work (especially with hooks and react/memo) is based on referential equality:
-;; objects are considered equal based on their memory location and not its value.
+;; objects are considered equal based on their memory location and not their value.
 ;;
 ;; In order for us to provide a 'Reagent facade' - that is, something to convert from a single-arg React function component with JS props
 ;; to a (potentially) multi-arg Clojure function accepting any sort of type as its arguments, we need to basically return the
