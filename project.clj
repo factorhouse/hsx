@@ -1,4 +1,4 @@
-(defproject io.factorhouse/hsx "1.0.11"
+(defproject io.factorhouse/hsx "0.1.12"
   :description "HSX is a ClojureScript library for writing React components using Hiccup syntax."
   :url "http://github.com/factorhouse/hsx"
   :license {:name         "Apache-2.0 License"
@@ -17,6 +17,9 @@
   :test-paths ["test/cljs"]
   :source-paths ["modules/hsx/src"
                  "modules/hsx-reagent-bridge/src"]
+  :repositories [["github" {:url      "https://maven.pkg.github.com/cljcloud/my-lib"
+                            :username "private-token"
+                            :password :env/GITHUB_TOKEN}]]
   :aliases {"kondo"  ["with-profile" "+smoke" "run" "-m" "clj-kondo.main" "--lint"
                       "modules/hsx/src"
                       "modules/hsx-reagent-bridge/src"
