@@ -17,7 +17,7 @@
   :test-paths ["test/cljs"]
   :source-paths ["modules/hsx/src"
                  "modules/hsx-reagent-bridge/src"]
-  :repositories [["github" {:url      "https://maven.pkg.github.com/cljcloud/my-lib"
+  :repositories [["github" {:url      "https://maven.pkg.github.com/factorhouse/hsx"
                             :username "private-token"
                             :password :env/GITHUB_TOKEN}]]
   :aliases {"kondo"  ["with-profile" "+smoke" "run" "-m" "clj-kondo.main" "--lint"
