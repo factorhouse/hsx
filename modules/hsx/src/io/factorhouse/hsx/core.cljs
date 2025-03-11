@@ -107,12 +107,26 @@
   (= (obj/get prev-props "args")
      (obj/get next-props "args")))
 
-(defonce ^:private component-factory-cache
+;; The way that React function components work (especially with hooks and react/memo) is based on referential equality:
+;; objects are considered equal based on their memory location and not its value.
+;;
+;; In order for us to provide a 'Reagent facade' - that is, something to convert from a single-arg React function component with JS props
+;; to a (potentially) multi-arg Clojure function accepting any sort of type as its arguments, we need to basically return the
+;; same facade component (the return value of `anon-hsx-comp-factory`) every time.
+;;
+;; To stop potentially unbounded memory growth, we use a JS WeakMap as our cache: where the keys are the Reagent function component objects...
+;; When the Reagent functions get GC'd, the key is also removed from the weak map cache.
+;;
+;; Further reading:
+;; - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakMap/WeakMap
+;; - https://react.dev/reference/react/memo
+;; - https://blog.bitsrc.io/understanding-referential-equality-in-react-a8fb3769be0
+(defonce ^:private component-cache
   (volatile! (js/WeakMap.)))
 
 (defn anon-hsx-component
   [elem-f memo?]
-  (let [weak-map ^js @component-factory-cache]
+  (let [weak-map ^js @component-cache]
     (if-let [proxy-comp (.get weak-map elem-f)]
       proxy-comp
       (let [proxy-comp' (anon-hsx-comp-factory elem-f)
@@ -125,7 +139,7 @@
 (defn memo-clear!
   "Resets the memoized component cache. Useful to call in dev after hot reloading."
   []
-  (vreset! component-factory-cache (js/WeakMap.)))
+  (vreset! component-cache (js/WeakMap.)))
 
 (defrecord Component [])
 
