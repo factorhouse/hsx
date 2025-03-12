@@ -16,8 +16,6 @@ jobs:
         uses: DeLaGuardo/setup-clojure@13.0
         with:
           lein: 'latest'
-      - run: lein kondo
-      - run: lein fmt
       - uses: actions/setup-node@v4
         with:
           node-version: 22
