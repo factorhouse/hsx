@@ -63,13 +63,7 @@ HSX exposes two primary functions:
 
 ## Migrating from Reagent
 
-If you have an existing Reagent codebase, you can use the `io.factorhouse/hsx-reagent-bridge ` library to ease some of the migration pains:
-
-```clojure 
-{:deps {"io.factorhouse/hsx-reagent-bridge" "1.0.0"}}
-```
-
-This dependency brings in a shim for the `reagent.core` namespace that aliases some of the APIs common functions:
+If you have an existing Reagent codebase, the following `reagent.core` functions map to:
 
 * `reagent.core/as-element` -> `io.factorhouse.hsx.core/create-element`
 * `reagent.core/reactify-component` -> `io.factorhouse.hsx.core/reactify-component`
