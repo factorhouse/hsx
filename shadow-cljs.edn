@@ -1,4 +1,4 @@
-{:source-paths ["modules/hsx/src" "test/cljs" "examples"]
+{:source-paths ["src" "test/cljs" "examples"]
 
  :dev-http     {8000 "public"}
 
