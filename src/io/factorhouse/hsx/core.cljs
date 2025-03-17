@@ -204,7 +204,7 @@
         (let [display-name (hsx-component->display-name elem-type)]
           (when (and (str/starts-with? display-name "$hoc") (not (:hoc outer-props)))
             (js/console.warn "Higher-order components (HOC) are discouraged when using HSX. See: https://legacy.reactjs.org/docs/higher-order-components.html#dont-use-hocs-inside-the-render-method. If you know what you are doing, and want to ignore this warning, pass a ^:hoc key to your HOC. Hiccup: ^:hoc"
-                             (pr-str [(symbol display-name) args])))))
+                             (pr-str (into [(symbol display-name)] args))))))
 
       (obj/extend props #js {"args" args})
       (create-react-element hsx returned-comp props nil))
