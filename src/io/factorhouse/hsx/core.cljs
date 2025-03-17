@@ -156,8 +156,10 @@
 
     (= :f> elem-type)
     (do
-      (js/console.warn "Annotating components for hooks (:f>) is a Reagent thing. Just call the component normally: "
-                       (pr-str [(hsx-component->display-name (second hsx)) "..."]))
+      (when ^boolean js/goog.DEBUG
+        (js/console.warn "Annotating components for hooks (:f>) is a Reagent thing. Just call the component directyl: "
+                         (pr-str (into [(hsx-component->display-name (second hsx))]
+                                       (drop 2 hsx)))))
       (when-not (anon-hsx-component? (first args))
         (handle-error*
          "Failed to create React Element from provided HSX: the second argument to :f> must be a ClojureScript function."
