@@ -202,7 +202,9 @@
 
       (when ^boolean js/goog.DEBUG
         (let [display-name (hsx-component->display-name elem-type)]
-          (when (and (str/starts-with? display-name "$hoc") (not (:hoc outer-props)))
+          (when (and (str/starts-with? display-name "$hoc")
+                     (or (not (:hoc outer-props))
+                         (not (:hoc (meta elem-type)))))
             (js/console.warn "Higher-order components (HOC) are discouraged when using HSX. See: https://legacy.reactjs.org/docs/higher-order-components.html#dont-use-hocs-inside-the-render-method. If you know what you are doing, and want to ignore this warning, pass a ^:hoc key to your HOC. Hiccup: ^:hoc"
                              (pr-str (into [(symbol display-name)] args))))))
 
