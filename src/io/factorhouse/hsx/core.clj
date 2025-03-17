@@ -7,7 +7,7 @@
   [display-name component-f]
   `(let [comp#         (fn ~(symbol display-name) [props#]
                          (let [elem-args# (obj-get props# "args")
-                               comp#      (~component-f elem-args#)]
+                               comp#      (apply ~component-f elem-args#)]
                            (create-element comp#)))
          display-name# ~(name display-name)]
      (set-display-name comp# display-name#)
