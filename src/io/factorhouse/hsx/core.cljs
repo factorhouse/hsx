@@ -37,14 +37,17 @@
 (defn- hsx-component->display-name
   [f]
   (try
-    (let [display-name (or (.-displayName f)
-                           (if (multi-method? f)
+    (let [mm? (multi-method? f)
+          display-name (or (.-displayName f)
+                           (if mm?
                              (some-> (.-name f) (obj/get "str"))
                              (.-name f)))]
       (if-not (str/blank? display-name)
         (let [display-name (-> display-name (str/replace "_" "-") (str/split "$"))]
           (if (= 1 (count display-name))
-            (str "$hoc/" (first display-name))
+            (if mm?
+              (str "$mm/" (first display-name))
+              (str "$hoc/" (first display-name)))
             (str (str/join "." (butlast display-name)) "/" (last display-name))))
         "$hoc"))
     (catch :default _
