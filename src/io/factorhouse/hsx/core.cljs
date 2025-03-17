@@ -43,8 +43,10 @@
                              (.-name f)))]
       (if-not (str/blank? display-name)
         (let [display-name (-> display-name (str/replace "_" "-") (str/split "$"))]
-          (str (str/join "." (butlast display-name)) "/" (last display-name)))
-        "anonymous-hsx-component"))
+          (if (= 1 (count display-name))
+            (str "$hoc/" (first display-name))
+            (str (str/join "." (butlast display-name)) "/" (last display-name))))
+        "$hoc"))
     (catch :default _
       (js/console.warn "Failed to construct a display name from HSX component, returning nil."))))
 
@@ -197,6 +199,12 @@
       (when ^boolean js/goog.DEBUG
         (when (and (multi-method? elem-type) (not (:key outer-props)))
           (js/console.warn "HSX: multimethod component" (hsx-component->display-name elem-type) "should be created with ^:key metadata.")))
+
+      (when ^boolean js/goog.DEBUG
+        (let [display-name (hsx-component->display-name elem-type)]
+          (when (and (str/starts-with? display-name "$hoc") (not (:hoc outer-props)))
+            (js/console.warn "Higher-order components (HOC) are discouraged when using HSX. See: https://legacy.reactjs.org/docs/higher-order-components.html#dont-use-hocs-inside-the-render-method. If you know what you are doing, and want to ignore this warning, pass a ^:hoc key to your HOC. Hiccup: ^:hoc"
+                             (pr-str [(symbol display-name) args])))))
 
       (obj/extend props #js {"args" args})
       (create-react-element hsx returned-comp props nil))
