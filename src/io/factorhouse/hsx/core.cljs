@@ -37,19 +37,15 @@
 (defn- hsx-component->display-name
   [f]
   (try
-    (let [mm? (multi-method? f)
-          display-name (or (.-displayName f)
-                           (if mm?
-                             (some-> (.-name f) (obj/get "str"))
-                             (.-name f)))]
-      (if-not (str/blank? display-name)
-        (let [display-name (-> display-name (str/replace "_" "-") (str/split "$"))]
-          (if (= 1 (count display-name))
-            (if mm?
-              (str "$mm/" (first display-name))
-              (str "$hoc/" (first display-name)))
-            (str (str/join "." (butlast display-name)) "/" (last display-name))))
-        "$hoc"))
+    (if (multi-method? f)
+      (some-> (.-name f) (obj/get "str"))
+      (let [display-name (.-name f)]
+        (if-not (str/blank? display-name)
+          (let [display-name (-> display-name (str/replace "_" "-") (str/split "$"))]
+            (if (= 1 (count display-name))
+              (str "$hoc/" (first display-name))
+              (str (str/join "." (butlast display-name)) "/" (last display-name))))
+          "$hoc")))
     (catch :default _
       (js/console.warn "Failed to construct a display name from HSX component, returning nil."))))
 
