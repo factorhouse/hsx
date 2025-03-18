@@ -91,17 +91,19 @@
 
 (defn- anon-hsx-comp-factory
   [elem-f]
-  (fn anon-hsx-comp-proxy [props]
-    (let [elem-args (obj/get props "args")
-          comp*     (try (apply elem-f elem-args)
-                         (catch :default e
-                           (let [display-name (hsx-component->display-name elem-f)]
-                             (handle-error* (str "Unhandled exception calling HSX component " display-name)
-                                            {:props      elem-args
-                                             :error-type :unhandled-exception
-                                             :elem       elem-f}
-                                            e))))]
-      (create-element comp*))))
+  (let [proxy* (fn anon-hsx-comp-proxy [props]
+                 (let [elem-args (obj/get props "args")
+                       comp*     (try (apply elem-f elem-args)
+                                      (catch :default e
+                                        (let [display-name (hsx-component->display-name elem-f)]
+                                          (handle-error* (str "Unhandled exception calling HSX component " display-name)
+                                                         {:props      elem-args
+                                                          :error-type :unhandled-exception
+                                                          :elem       elem-f}
+                                                         e))))]
+                   (create-element comp*)))]
+    (set-display-name proxy* (hsx-component->display-name elem-f))
+    proxy*))
 
 (defn- are-props-equal?
   [prev-props next-props]
@@ -130,10 +132,8 @@
   (let [weak-map ^js @component-cache]
     (if-let [proxy-comp (.get weak-map elem-f)]
       proxy-comp
-      (let [proxy-comp' (anon-hsx-comp-factory elem-f)
-            proxy-comp  (cond-> proxy-comp'
-                          memo? (react/memo are-props-equal?))]
-        (set-display-name proxy-comp' (hsx-component->display-name elem-f))
+      (let [proxy-comp (cond-> (anon-hsx-comp-factory elem-f)
+                         memo? (react/memo are-props-equal?))]
         (.set weak-map elem-f proxy-comp)
         proxy-comp))))
 
@@ -197,11 +197,11 @@
           returned-comp (anon-hsx-component elem-type (:memo? outer-props))
           props         (or (hsx-props->react-props hsx outer-props)
                             #js {})]
-      (when ^boolean js/goog.DEBUG
-        (when (and (multi-method? elem-type) (not (:key outer-props)))
-          (js/console.warn "HSX: multimethod component" (hsx-component->display-name elem-type) "should be created with ^:key metadata.")))
 
       (when ^boolean js/goog.DEBUG
+        (when (and (multi-method? elem-type) (not (:key outer-props)))
+          (js/console.warn "HSX: multimethod component" (hsx-component->display-name elem-type) "should be created with ^:key metadata."))
+
         (let [display-name (hsx-component->display-name elem-type)]
           (when (and (str/starts-with? display-name "$hoc")
                      (or (not (:hoc outer-props))
