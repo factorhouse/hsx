@@ -64,7 +64,7 @@
     [:div {:className "bg-gray-100 w-screen min-h-screen"}
      [:div {:className "container mx-auto p-4 max-w-md"}
       [:h1 {:className "p-4 text-gray-600 text-4xl font-bold text-center"}
-       "Todos"]
+       :todos]
       [todo-input add-todo]
       [:div {:className "mt-6"}
        (for [todo todos]

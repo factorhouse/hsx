@@ -256,6 +256,9 @@
     (seq? this)
     (into-array (map create-element this))
 
+    (keyword? this)
+    (name this)
+
     :else
     this))
 
