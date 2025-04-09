@@ -20,7 +20,7 @@
 
 (defn todo-item
   [{:keys [complete text datetime id]} remove-todo toggle-complete]
-  [:div {:className "relative mb-4 p-3 shadow-md bg-white border rounded"}
+  ["div#id.relative.mb-4.p-3" {:className "shadow-md bg-white border rounded"}
    [:div {:className (class-names "text-2xl font-bold break-all"
                                   (if complete
                                     "text-gray-400 line-through"

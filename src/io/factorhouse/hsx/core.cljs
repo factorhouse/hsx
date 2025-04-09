@@ -213,7 +213,7 @@
       (obj/extend props #js {"args" args})
       (create-react-element hsx returned-comp props nil))
 
-    (keyword? elem-type)
+    (or (keyword? elem-type) (string? elem-type))
     (let [{:keys [tag id className]} (tag/cached-parse elem-type)
           props    (hsx-props->react-props hsx (first args))
           children (if props
