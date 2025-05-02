@@ -156,7 +156,7 @@
     (= :f> elem-type)
     (do
       (when ^boolean js/goog.DEBUG
-        (js/console.warn "Annotating components for hooks (:f>) is a Reagent thing. Just call the component directyl: "
+        (js/console.warn "Annotating components for hooks (:f>) is a Reagent thing. Just call the component directly: "
                          (pr-str (into [(hsx-component->display-name (second hsx))]
                                        (drop 2 hsx)))))
       (when-not (anon-hsx-component? (first args))
