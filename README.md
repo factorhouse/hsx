@@ -12,7 +12,7 @@ HSX is designed to offer a seamless transition from Reagent-style development to
 
 Unlike Reagent, HSX does not:
 
-* Render components as classes (under the hood). HSX elements are plain React Function components.
+* Render components as classes (under the hood). HSX compiles to plain React Function components.
 * Include its own state abstractions like Ratoms and reactions. Use React’s built-in state management hooks like [useState](https://react.dev/reference/react/useState).
 
 If you want to read more about the engineering challenge of moving a 60k+ LOC Reagent codebase to React 19 read [this blog post]().
@@ -31,7 +31,7 @@ If you want to read more about the engineering challenge of moving a 60k+ LOC Re
 ### Challenges with Reagent
 
 * **React 19 Compatibility**: Reagent's rendering model [does not play nice](https://github.com/reagent-project/reagent/issues/597#issuecomment-1908054952) with current React versions
-* **Technical Debt**: Continuing to depend on Reagent introduces maintenance challenges. Reagent depends on a version of React that is 4+ years old. Most of the React ecosystem is starting require React 18 at a minimum.
+* **Technical Debt**: Continuing to depend on Reagent introduces maintenance challenges. Reagent depends on a version of React that is over three years old. Most of the React ecosystem is starting require React 18 at a minimum.
 
 ## Usage
 
@@ -39,7 +39,7 @@ Using HSX is straightforward. The entire library is only about 300 lines of Cloj
 
 HSX exposes two primary functions:
 
-* `io.factorhouse.hsx.core/create-element` - like `react/createElement` but for HSX elements
+* `io.factorhouse.hsx.core/create-element` - like `react/createElement` but for HSX components
 * `io.factorhouse.hsx.core/reactify-component` - like `reagent.core/reactify-component`
 
 ### Example
@@ -49,17 +49,19 @@ HSX exposes two primary functions:
   (:require [io.factorhouse.hsx.core :as hsx]
             ["react-dom/client" :refer [createRoot]]))
 
-;; Create an anonymous Hsx component (like Reagent) 
-(defn test-ui []
-  [:div {:on-click #(js/alert "Clicked!")}
-   "Hello world"])
+;; This is a HSX component
+(defn test-ui [props text]
+  [:div props
+   "Hello " text "!"])
 
 (defonce root
   (createRoot (.getElementById js/document "app")))
 
 (defn init []
-  (.render root (hsx/create-element [test-ui])))
+  (.render root (hsx/create-element [test-ui {:on-click #(js/alert "Clicked!")} "prospective HSX user"])))
 ```
+
+See the [examples](https://github.com/factorhouse/hsx/tree/main/examples/hsx) directory for more examples.
 
 ## Migrating from Reagent
 
@@ -112,6 +114,17 @@ If Rfx is overkill for your application (or you have bespoke requirements), you 
 * [useSyncExternalStore](https://react.dev/reference/react/useSyncExternalStore) hook to subscribe to an external store (such as a plain Clojure atom or even a [Datascript database](https://github.com/tonsky/datascript)). See [example]().
 * Solutions found in the JS ecosystem like [zustand](https://github.com/pmndrs/zustand). See [example]().
 * Using React [Reducer and Context](https://react.dev/learn/scaling-up-with-reducer-and-context) APIs. See [example]().
+
+### What about hot-reloading?
+
+Using [shadow-cljs](https://github.com/thheller/shadow-cljs) add a reload function like:
+
+```clojure
+(defn ^:dev/after-load reload []
+  (hsx/memo-clear!))
+```
+
+This will clear the component cache after code change.
 
 ### How are props handled?
 
