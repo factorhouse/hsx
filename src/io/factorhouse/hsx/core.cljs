@@ -47,7 +47,8 @@
               (str (str/join "." (butlast display-name)) "/" (last display-name))))
           "$hoc")))
     (catch :default _
-      (js/console.warn "Failed to construct a display name from HSX component, returning nil."))))
+      (when ^boolean js/goog.DEBUG
+        (js/console.warn "Failed to construct a display name from HSX component, returning nil.")))))
 
 (def ^:private react-special-components
   #{"react.profiler"
@@ -91,24 +92,25 @@
 
 (defn- anon-hsx-comp-factory
   [elem-f]
-  (let [proxy* (fn anon-hsx-comp-proxy [props]
-                 (let [elem-args (obj/get props "args")
-                       comp*     (try (apply elem-f elem-args)
-                                      (catch :default e
-                                        (let [display-name (hsx-component->display-name elem-f)]
-                                          (handle-error* (str "Unhandled exception calling HSX component " display-name)
-                                                         {:props      elem-args
-                                                          :error-type :unhandled-exception
-                                                          :elem       elem-f}
-                                                         e))))]
-                   (create-element comp*)))]
-    (set-display-name proxy* (hsx-component->display-name elem-f))
+  (let [display-name (hsx-component->display-name elem-f)
+        proxy*       (fn anon-hsx-comp-proxy [props]
+                       (let [elem-args (obj/get props "args")
+                             comp*     (try (apply elem-f elem-args)
+                                            (catch :default e
+                                              (handle-error* (str "Unhandled exception calling HSX component " display-name)
+                                                             {:props      elem-args
+                                                              :error-type :unhandled-exception
+                                                              :elem       elem-f}
+                                                             e)))]
+                         (create-element comp*)))]
+    (set-display-name proxy* display-name)
     proxy*))
 
 (defn- are-props-equal?
-  [prev-props next-props]
-  (= (obj/get prev-props "args")
-     (obj/get next-props "args")))
+  [pred]
+  (fn are-props-equal?* [prev-props next-props]
+    (pred (obj/get prev-props "args")
+          (obj/get next-props "args"))))
 
 ;; The way that React function components work (especially with hooks and react/memo) is based on referential equality:
 ;; objects are considered equal based on their memory location and not their value.
@@ -128,12 +130,12 @@
   (volatile! (js/WeakMap.)))
 
 (defn- anon-hsx-component
-  [elem-f memo?]
+  [elem-f memo? memo-pred]
   (let [weak-map ^js @component-cache]
     (if-let [proxy-comp (.get weak-map elem-f)]
       proxy-comp
       (let [proxy-comp (cond-> (anon-hsx-comp-factory elem-f)
-                         memo? (react/memo are-props-equal?))]
+                         memo? (react/memo (are-props-equal? memo-pred)))]
         (.set weak-map elem-f proxy-comp)
         proxy-comp))))
 
@@ -194,7 +196,7 @@
 
     (anon-hsx-component? elem-type)
     (let [outer-props   (merge {:memo? USE_MEMO} (meta hsx))
-          returned-comp (anon-hsx-component elem-type (:memo? outer-props))
+          returned-comp (anon-hsx-component elem-type (:memo? outer-props) (or (:memo/predicate outer-props) =))
           props         (or (hsx-props->react-props hsx outer-props)
                             #js {})]
 

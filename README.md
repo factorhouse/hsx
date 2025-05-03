@@ -8,14 +8,14 @@ Think of HSX as a lightweight syntactic layer over React, much like [JSX](https:
 
 ## Why HSX?
 
-HSX is designed to offer a seamless transition from Reagent-style development to plain React Function components. It’s compatible with [Reagent-style Hiccup](https://github.com/reagent-project/reagent/blob/master/doc/UsingHiccupToDescribeHTML.md), making it easy to migrate your codebase to HSX.
+HSX is designed to offer a seamless transition from Reagent-style development to plain, idiomatic React Function components. It’s compatible with [Reagent-style Hiccup](https://github.com/reagent-project/reagent/blob/master/doc/UsingHiccupToDescribeHTML.md), making it trivial to migrate your existing Reagent codebase to HSX.
 
 Unlike Reagent, HSX does not:
 
-* Render components as classes. HSX elements are plain React Function components.
-* Include its own state abstractions like RAtom. Use React’s built-in state management hooks like [useState](https://react.dev/reference/react/useState).
+* Render components as classes (under the hood). HSX elements are plain React Function components.
+* Include its own state abstractions like Ratoms and reactions. Use React’s built-in state management hooks like [useState](https://react.dev/reference/react/useState).
 
-If you want to read more about the engineering challenge of moving a 100k+ LOC Reagent codebase to React 19 read [this blog post]().
+If you want to read more about the engineering challenge of moving a 60k+ LOC Reagent codebase to React 19 read [this blog post]().
 
 ## Features
 
@@ -166,7 +166,7 @@ By default, yes, HSX components are wrapped in a [react/memo](https://react.dev/
 
 **Note**: unlike Reagent, memoization is a performance optimization. Please refer to the [official React documentation](https://react.dev/reference/react/memo) for more information.
 
-If you'd like to disable memoization globally, you can:
+If you'd like to disable memoization by default globally, you can:
 
 ```clojure
 {...
@@ -180,11 +180,24 @@ If you'd like to disable memoization globally, you can:
    }}}
 ```
 
-If you'd like to disable/enable memoization per-component, you can supply `:memo?` key as metadata to the component vector:
+If you'd like to disable/enable memoization per-component, you can supply a `:memo?` key as metadata to the component vector:
 
 ```clojure 
 [:div 
  ^{:memo? false} 
+ [my-hsx-comp arg1 arg2]]
+```
+
+If you want to use a custom `are-props-equal?` predicate for memoization, you can also use component metadata:
+
+```clojure
+;; This custom predicate treats the previous and next state as equal if the value of `:foo` has not changed.
+(defn custom-are-props-equal-pred
+  [[prev-arg1 _prev-arg2] [next-arg1 _next-arg2]]
+  (= (:foo prev-arg1) (:foo next-arg1)))
+
+[:div
+ ^{:memo? true :memo/predicate custom-are-props-equal-pred}
  [my-hsx-comp arg1 arg2]]
 ```
 
