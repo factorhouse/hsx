@@ -8,7 +8,7 @@ Think of HSX as a lightweight syntactic layer over React, much like [JSX](https:
 
 ## Why HSX?
 
-HSX is designed to offer a seamless transition from Reagent-style development to plain, idiomatic React Function components. It’s compatible with [Reagent-style Hiccup](https://github.com/reagent-project/reagent/blob/master/doc/UsingHiccupToDescribeHTML.md), making it trivial to migrate your existing Reagent codebase to HSX.
+HSX is designed to offer a seamless transition from Reagent to plain, idiomatic React Function components. It’s compatible with [Reagent-style Hiccup](https://github.com/reagent-project/reagent/blob/master/doc/UsingHiccupToDescribeHTML.md), making it trivial to migrate your existing codebase to HSX.
 
 Unlike Reagent, HSX does not:
 
@@ -30,12 +30,12 @@ If you want to read more about the engineering challenge of moving a 60k+ LOC Re
 
 ### Challenges with Reagent
 
-* **React 19 Compatibility**: Reagent's rendering model [does not play nice](https://github.com/reagent-project/reagent/issues/597#issuecomment-1908054952) with current React versions
+* **React 19 Compatibility**: Reagent's rendering model [does not play nice](https://github.com/reagent-project/reagent/issues/597#issuecomment-1908054952) with current React versions.
 * **Technical Debt**: Continuing to depend on Reagent introduces maintenance challenges. Reagent depends on a version of React that is over three years old. Most of the React ecosystem is starting require React 18 at a minimum.
 
 ## Usage
 
-Using HSX is straightforward. The entire library is only about 300 lines of ClojureScript (with comments). HSX is designed to be as close to plain React as possible while retaining the expressive power of Hiccup.
+Using HSX is straightforward. The entire library is only about 300 lines of ClojureScript (with comments). HSX is designed to be as close to plain React as possible while retaining the expressive power of Hiccup and Clojure data structures.
 
 HSX exposes two primary functions:
 
@@ -58,7 +58,10 @@ HSX exposes two primary functions:
   (createRoot (.getElementById js/document "app")))
 
 (defn init []
-  (.render root (hsx/create-element [test-ui {:on-click #(js/alert "Clicked!")} "prospective HSX user"])))
+  (.render root 
+           (hsx/create-element 
+             [test-ui {:on-click #(js/alert "Clicked!")} 
+              "prospective HSX user"])))
 ```
 
 See the [examples](https://github.com/factorhouse/hsx/tree/main/examples/hsx) directory for more examples.
@@ -73,14 +76,17 @@ If you have an existing Reagent codebase, the following `reagent.core` functions
 
 ## FAQs
 
-### What about performance? 
+### What about performance?
 
-Migrating from Reagent you will objectively find massive performance wins for your application because:
+When migrating from Reagent you will objectively find performance wins for your application by:
 
-* You ditch the years of baggage Reagent has carried (RAtoms, reactions, batched updates, class components etc)
-* You get the performance improvements found in [recent React versions](https://vercel.com/blog/how-react-18-improves-application-performance) by staying closer to the React core
+- **Embracing concurrent rendering** - allowing React to [interrupt, schedule, and batch updates more intelligently](https://vercel.com/blog/how-react-18-improves-application-performance).
+- **Eliminating class-based components**, which Reagent relied on under the hood, removing unnecessary rendering layers (via `:f>`) and improved interop with React libraries.
+- **Fixing long-standing Reagent interop quirks** — such as the well-documented [controlled input hacks](https://github.com/reagent-project/reagent/issues/619).
 
-### What about RAtoms (local state)?
+When profiling our real-world, enterprise grade product ([Kpow](https://factorhouse.io/kpow)) we saw 4x fewer commits without the overall render duration blowing out after switching to HSX. More details [here]().
+
+### What about Ratoms (local state)?
 
 HSX components are just React function components under the hood with a bit of syntactic sugar. 
 
@@ -103,17 +109,17 @@ There are no state abstractions found in this library. We suggest you migrate an
 
 ### What about re-frame?
 
-We have a companion library named [Rfx](https://github.com/factorhouse/rfx) which is a drop-in replacement for re-frame without the dependency on Reagent.
+We have a companion library named [RFX](https://github.com/factorhouse/rfx) which is a drop-in replacement for re-frame without the dependency on Reagent.
 
-See the [Rfx repo](https://github.com/factorhouse/rfx) for more details.
+See the [RFX repo](https://github.com/factorhouse/rfx) for more details.
 
 ### What about global application state?
 
-If Rfx is overkill for your application (or you have bespoke requirements), you can use standard React solutions for global application state management like:
+If RFX is overkill for your application (or you have bespoke requirements), you can use standard React solutions for global application state management like:
 
-* [useSyncExternalStore](https://react.dev/reference/react/useSyncExternalStore) hook to subscribe to an external store (such as a plain Clojure atom or even a [Datascript database](https://github.com/tonsky/datascript)). See [example]().
-* Solutions found in the JS ecosystem like [zustand](https://github.com/pmndrs/zustand). See [example]().
-* Using React [Reducer and Context](https://react.dev/learn/scaling-up-with-reducer-and-context) APIs. See [example]().
+* [useSyncExternalStore](https://react.dev/reference/react/useSyncExternalStore) hook to subscribe to an external store (such as a plain Clojure atom or even a [Datascript database](https://github.com/tonsky/datascript)).
+* Solutions found in the JS ecosystem like [zustand](https://github.com/pmndrs/zustand).
+* Using React [Reducer and Context](https://react.dev/learn/scaling-up-with-reducer-and-context) APIs.
 
 ### What about hot-reloading?
 
@@ -124,7 +130,7 @@ Using [shadow-cljs](https://github.com/thheller/shadow-cljs) add a reload functi
   (hsx/memo-clear!))
 ```
 
-This will clear the component cache after code change.
+This will clear the component cache after a code change.
 
 ### How are props handled?
 
@@ -136,17 +142,17 @@ Exactly the same as Reagent:
 
 Would translate to:
 
-```clojure 
+```clojure
 [:div #js {"onClick" #(js/alert "Clicked!")}]
 ```
 
 We use the same props serialization logic as Reagent to make migrating to HSX as pain-free as possible.
 
-### What about component metadata (keys etc)
+### What about component metadata (keys, etc)
 
 The same as Reagent - use Clojure metadata. Say you want to pass a React key to a component:
 
-```clojure 
+```clojure
 (defn component-with-seq []
   [:ol {:className "bg-slate-500"}
    (for [item items]
@@ -156,9 +162,9 @@ The same as Reagent - use Clojure metadata. Say you want to pass a React key to 
 
 ### What about `id` and `className` short-hands?
 
-The same as Reagent:
+The same as Reagent + Hiccup:
 
-```clojure 
+```clojure
 [:div#foo ...] ;; => [:div {:id "foo"}]
 [:div.foo.bar ...] ;; => [:div {:className "foo bar"}]
 ```
@@ -195,7 +201,7 @@ If you'd like to disable memoization by default globally, you can:
 
 If you'd like to disable/enable memoization per-component, you can supply a `:memo?` key as metadata to the component vector:
 
-```clojure 
+```clojure
 [:div 
  ^{:memo? false} 
  [my-hsx-comp arg1 arg2]]
@@ -218,7 +224,7 @@ If you want to use a custom `are-props-equal?` predicate for memoization, you ca
 
 The same as Reagent. Denoted by `:<>`
 
-```clojure 
+```clojure
 (defn list-of-things [] 
   [:<> 
    [:div "First thing"]
@@ -229,11 +235,11 @@ The same as Reagent. Denoted by `:<>`
 
 The same as Reagent. Denoted by `:>`
 
-```clojure 
+```clojure
 ;; (:require ["react-select" :as Select])
 
 (defn dropdown-example [options]
-  [:> Select {:on-change #(js/alert "Data changed") 
+  [:> Select {:on-change #(js/alert "Data changed")
               :options options}])
 ```
 
@@ -241,7 +247,7 @@ The same as Reagent. Denoted by `:>`
 
 Yes, pass a JS Object instead:
 
-```clojure 
+```clojure
 ;; (:require ["react-select" :as Select])
 
 (defn dropdown-example [options]
@@ -253,7 +259,7 @@ Yes, pass a JS Object instead:
 
 Use `hsx/reactify-component`. If we use [react-error-boundary](https://github.com/bvaughn/react-error-boundary) as an example:
 
-```clojure 
+```clojure
 ;; (:require ["react-error-boundary" :refer [ErrorBoundary]] 
 ;;           [io.factorhouse.hsx.core :as hsx])
 
@@ -269,59 +275,6 @@ Use `hsx/reactify-component`. If we use [react-error-boundary](https://github.co
 (defn my-ui []
   [with-error-boundary 
    [:div "This is my application..."]])
-```
-
-### How are errors handled?
-
-HSX has a customisable error handler. By default, an `ex-info` is thrown when an error is encountered. This `ex-info` object will contain:
-
-* The message - a human-readable message describing the error
-* ex-data - context about the error: the originating hiccup, the failing element, the type of error and so forth
-* The original exception
-
-Error handling is extensible!
-
-You could have both a production and dev error handler:
-
-* Your production error handler might tap into some sort of error tracking backend like Sentry.
-* Your dev error handler might log to the console and return some Hiccup describing the error that is meaningful to developers.
-
-You can customise the error handler using `closure-defines`. Within your `shadow-cljs.edn` file:
-
-```clojure
-{...
- :builds
- {:app
-  {:target :browser
-   ...
-   :modules {:app {:entries [your.app]}}
-   ;; to enable in development only
-   :dev {:closure-defines {io.factorhouse.hsx/ERROR-HANDLER "dev"}}
-
-   :release {:closure-defines {io.factorhouse/ERROR-HANDLER "prod"}}
-   }}
-```
-
-You can then extend the `io.factorhouse.hsx.core/error-handler` multimethod for each of your error handlers:
-
-```clojure
-(defmethod hsx/error-handler :dev
-  [_ message ctx e]
-  (js/console.warn "Error compiling HSX" message e)
-  ;; Return some HSX
-  [:<>
-    [:h1 "Error compiling HSX"]
-    [:p message]
-    [:pre (pr-str ctx)]
-    [:p "Please check the output of your browser's console for more details."]]
-```
-
-```clojure
-(defmethod hsx/error-handler :prod
-  [_ message ctx e]
-  (mark-hsx-syntax-error! ctx)
-  ;; Let our React error boundary handle the exception - the error boundary is what our customers will see if we have broken the app...
-  (throw (ex-info message ctx e)))
 ```
 
 ## Copyright and License
