@@ -1,6 +1,7 @@
 # HSX
 
 [![test](https://github.com/factorhouse/hsx/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/factorhouse/hsx/actions/workflows/test.yml)
+[![Clojars Project](https://img.shields.io/clojars/v/io.factorhouse/hsx.svg)](https://clojars.org/io.factorhouse/hsx)
 
 **HSX** is a ClojureScript library for writing React components using [Hiccup syntax](https://github.com/weavejester/hiccup). We believe Hiccup is the most idiomatic (and joyful) way to express HTML in Clojure.
 
