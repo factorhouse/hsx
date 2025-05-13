@@ -13,4 +13,4 @@
      (set-display-name comp# display-name#)
      (map->Component {:proxy        comp#
                       :display-name display-name#
-                      :proxy-memo   (react-memo comp# are-props-equal?)})))
+                      :proxy-memo   (react-memo comp# (are-props-equal? =))})))
