@@ -71,9 +71,11 @@ See the [examples](https://github.com/factorhouse/hsx/tree/main/examples/hsx) di
 
 If you have an existing Reagent codebase, the following `reagent.core` functions map to:
 
-* `reagent.core/as-element` -> `io.factorhouse.hsx.core/create-element`
-* `reagent.core/reactify-component` -> `io.factorhouse.hsx.core/reactify-component`
-* `reagent.core/create-element` -> `react/createElement`
+| Reagent | HSX |
+|----------|-------------|
+| `reagent.core/as-element` | `io.factorhouse.hsx.core/create-element` |
+| `reagent.core/reactify-component` | `io.factorhouse.hsx.core/reactify-component` |
+| `reagent.core/create-element` | `react/createElement` |
 
 ## FAQs
 
