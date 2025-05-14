@@ -16,7 +16,7 @@ Unlike Reagent, HSX does not:
 * Render components as classes (under the hood). HSX compiles to plain React Function components.
 * Include its own state abstractions like Ratoms and reactions. Use React’s built-in state management hooks like [useState](https://react.dev/reference/react/useState).
 
-If you want to read more about the engineering challenge of moving a 60k+ LOC Reagent codebase to React 19 read [this blog post]().
+If you want to read more about the engineering challenge of moving a 120k LOC Reagent codebase to React 19 read [this blog post]().
 
 ## Features
 
