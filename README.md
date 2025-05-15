@@ -87,7 +87,7 @@ When migrating from Reagent you will objectively find performance wins for your 
 - **Eliminating class-based components**, which Reagent relied on under the hood, removing unnecessary rendering layers (via `:f>`) and improved interop with React libraries.
 - **Fixing long-standing Reagent interop quirks** — such as the well-documented [controlled input hacks](https://github.com/reagent-project/reagent/issues/619).
 
-When profiling our real-world, enterprise grade product ([Kpow](https://factorhouse.io/kpow)) we saw 4x fewer commits without the overall render duration blowing out after switching to HSX. More details [here]().
+When profiling our real-world, enterprise grade product ([Kpow](https://factorhouse.io/kpow)) we saw 4x fewer commits without the overall render duration blowing out after switching to HSX. More details [here](https://factorhouse.io/articles/evolving-beyond-reagent/).
 
 ### What about Ratoms (local state)?
 
