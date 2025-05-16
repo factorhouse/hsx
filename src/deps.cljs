@@ -1,2 +1,2 @@
-{:npm-deps {"react"     "^18.3.1"
-            "react-dom" "^18.3.1"}}
+{:npm-deps {"react"     "^18.0.0 || ^19.0.0"
+            "react-dom" "^18.0.0 || ^19.0.0"}}
