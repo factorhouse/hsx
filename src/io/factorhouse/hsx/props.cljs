@@ -49,10 +49,19 @@
 
 (declare convert-prop-value)
 
+(defn convert-class
+  [klass]
+  (let [classes (if (string? klass) [klass] klass)]
+    (str/join " " classes)))
+
 (defn kv-conv
   [o k v]
-  (doto o
-    (obj/set (cached-prop-name k) (convert-prop-value v))))
+  (let [prop-name (cached-prop-name k)
+        prop-value (if (= prop-name "className")
+                     (convert-class v)
+                     (convert-prop-value v))]
+    (doto o
+      (obj/set prop-name prop-value))))
 
 (defn convert-prop-value
   [x]
